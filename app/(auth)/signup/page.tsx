@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const ERRORS: Record<string, string> = {
@@ -10,11 +9,17 @@ const ERRORS: Record<string, string> = {
 };
 
 export default function SignupPage() {
-  const params = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(
-    ERRORS[params.get("error") ?? ""] ?? null
-  );
+  const [error, setError] = useState<string | null>(null);
+
+  // Read the callback error from the URL directly. Deliberately NOT
+  // useSearchParams() — that hook opts the route out of prerendering and
+  // fails the production build unless wrapped in Suspense. This has no
+  // such constraint.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (code && ERRORS[code]) setError(ERRORS[code]);
+  }, []);
 
   async function signInWithGoogle() {
     setLoading(true);
