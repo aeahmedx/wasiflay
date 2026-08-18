@@ -10,6 +10,7 @@ import {
 import { PostCard } from "@/components/posts/post-card";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
+import { getOpenReportCount } from "@/lib/queries/moderation";
 
 type Search = { tab?: string; region?: string };
 
@@ -27,6 +28,9 @@ export default async function HomePage({
     getCurrentProfile(),
     getRegions(supabase),
   ]);
+
+  const isStaff = profile?.role === "moderator" || profile?.role === "admin";
+  const openReports = isStaff ? await getOpenReportCount(supabase) : 0;
 
   // No ?region= means "my region". An explicit ?region=all means everything.
   const region =
@@ -67,6 +71,14 @@ export default async function HomePage({
               >
                 Profile
               </Link>
+              {isStaff && (
+                <Link
+                  href="/mod"
+                  className="text-sm text-emerald-800 underline underline-offset-4"
+                >
+                  Mod{openReports > 0 ? ` (${openReports})` : ""}
+                </Link>
+              )}
             </span>
           ) : (
             <Link

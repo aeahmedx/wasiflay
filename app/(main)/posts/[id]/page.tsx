@@ -12,6 +12,7 @@ import { AnswerItem } from "@/components/posts/answer-item";
 import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BackLink } from "@/components/back-link";
+import { ReportButton } from "@/components/report-button";
 import { getRegions, regionName } from "@/lib/queries/regions";
 
 const TYPE_LABEL = {
@@ -68,6 +69,16 @@ export default async function PostPage({
               >
                 Edit
               </Link>
+            )}
+          </div>
+
+          <div className="mt-1">
+            {!isMine && (
+              <ReportButton
+                targetType="post"
+                targetId={post.id}
+                userId={userId}
+              />
             )}
           </div>
 

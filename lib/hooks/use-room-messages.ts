@@ -150,6 +150,28 @@ export function useRoomMessages(roomId: string, initial: Message[]) {
             mergeMessages([row]);
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "messages",
+            filter: `room_id=eq.${roomId}`,
+          },
+          (payload) => {
+            // A moderator removing a message must clear it from every
+            // screen already in the room, not just on next reload.
+            const row = payload.new as Message & { is_removed?: boolean };
+            if (!row.id) return;
+            if (row.is_removed) {
+              setMessages((current) => current.filter((m) => m.id !== row.id));
+            } else {
+              setMessages((current) =>
+                current.map((m) => (m.id === row.id ? { ...m, ...row } : m))
+              );
+            }
+          }
+        )
         .subscribe((status) => {
           if (cancelled) return;
 
