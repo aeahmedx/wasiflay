@@ -9,6 +9,7 @@ import {
 } from "@/lib/queries/posts";
 import { PostCard } from "@/components/posts/post-card";
 import { RegionPicker } from "@/components/region-picker";
+import { ViewTabs } from "@/components/view-tabs";
 
 type Search = { tab?: string; region?: string };
 
@@ -37,6 +38,13 @@ export default async function HomePage({
     ? await getTrendingPosts(supabase, region)
     : await getLatestPosts(supabase, region);
   const authors = await getAuthorsFor(supabase, posts);
+
+  // Carry the current region choice across tab switches, including "all".
+  const regionQuery = params.region
+    ? `&region=${params.region}`
+    : region
+    ? `&region=${region}`
+    : "&region=all";
 
   return (
     <main className="min-h-dvh bg-stone-50 pb-24">
@@ -88,33 +96,21 @@ export default async function HomePage({
         </Link>
 
         <div className="flex items-center justify-between gap-2 mb-4">
-          <div className="flex gap-1">
-            {[
-              { key: "latest", label: "Latest" },
-              { key: "trending", label: "Trending" },
-            ].map((t) => {
-              const active = t.key === tab;
-              // Always carry the current region choice, including "all".
-              const query = params.region
-                ? `&region=${params.region}`
-                : region
-                ? `&region=${region}`
-                : "&region=all";
-              return (
-                <Link
-                  key={t.key}
-                  href={`/?tab=${t.key}${query}`}
-                  className={`rounded-full px-3.5 py-1.5 text-sm ${
-                    active
-                      ? "bg-stone-900 text-white"
-                      : "text-stone-600 hover:bg-stone-200"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-          </div>
+          <ViewTabs
+            activeKey={tab}
+            tabs={[
+              {
+                key: "latest",
+                label: "Latest",
+                href: `/?tab=latest${regionQuery}`,
+              },
+              {
+                key: "trending",
+                label: "Trending",
+                href: `/?tab=trending${regionQuery}`,
+              },
+            ]}
+          />
 
           <RegionPicker regions={regions} current={region} tab={tab} />
         </div>

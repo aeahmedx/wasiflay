@@ -11,6 +11,7 @@ import { AnswerComposer } from "@/components/posts/answer-composer";
 import { AnswerItem } from "@/components/posts/answer-item";
 import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { BackLink } from "@/components/back-link";
 import { getRegions, regionName } from "@/lib/queries/regions";
 
 const TYPE_LABEL = {
@@ -53,12 +54,7 @@ export default async function PostPage({
   return (
     <div className="min-h-dvh bg-stone-50 flex flex-col">
       <div className="flex-1 max-w-md w-full mx-auto px-4 pt-5 pb-6">
-        <Link
-          href="/"
-          className="text-sm text-stone-600 underline underline-offset-4"
-        >
-          Back
-        </Link>
+        <BackLink />
 
         <article className="mt-4 rounded-lg border border-stone-200 bg-white px-4 py-4">
           <div className="flex items-start justify-between gap-3">
