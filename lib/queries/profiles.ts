@@ -69,3 +69,113 @@ export async function createProfile(
   const { error } = await client.from("profiles").insert(input);
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------
+// Profile pages (SPEC 8)
+// ---------------------------------------------------------------------
+
+/**
+ * Country code to flag emoji. 'SD' -> 🇸🇩 via regional indicator symbols.
+ * Returns '' for OTHER or anything malformed.
+ */
+export function flagEmoji(code: string | null): string {
+  if (!code || code.length !== 2 || !/^[A-Za-z]{2}$/.test(code)) return "";
+  return String.fromCodePoint(
+    ...code
+      .toUpperCase()
+      .split("")
+      .map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)
+  );
+}
+
+export type ProfilePost = {
+  id: string;
+  title: string;
+  type: "question" | "recommendation" | "announcement";
+  region: string;
+  answer_count: number;
+  helpful_count: number;
+  created_at: string;
+};
+
+export type ProfileAnswer = {
+  id: string;
+  post_id: string;
+  body: string;
+  helpful_count: number;
+  created_at: string;
+};
+
+/**
+ * Reads from public_posts, so anonymous posts are excluded automatically:
+ * their author_id is masked to null and never matches. No filter to
+ * forget, no leak to introduce later.
+ */
+export async function getProfilePosts(
+  client: SupabaseClient,
+  authorId: string,
+  limit = 30
+): Promise<ProfilePost[]> {
+  const { data, error } = await client
+    .from("public_posts")
+    .select("id, title, type, region, answer_count, helpful_count, created_at")
+    .eq("author_id", authorId)
+    .eq("is_anonymous", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as ProfilePost[];
+}
+
+export async function getProfileAnswers(
+  client: SupabaseClient,
+  authorId: string,
+  limit = 30
+): Promise<ProfileAnswer[]> {
+  const { data, error } = await client
+    .from("public_answers")
+    .select("id, post_id, body, helpful_count, created_at")
+    .eq("author_id", authorId)
+    .eq("is_anonymous", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as ProfileAnswer[];
+}
+
+/** Titles for the posts an answer belongs to. */
+export async function getPostTitles(
+  client: SupabaseClient,
+  postIds: string[]
+): Promise<Record<string, string>> {
+  if (postIds.length === 0) return {};
+
+  const { data, error } = await client
+    .from("public_posts")
+    .select("id, title")
+    .in("id", postIds);
+
+  if (error) throw error;
+
+  const map: Record<string, string> = {};
+  ((data ?? []) as { id: string; title: string }[]).forEach(
+    (p) => (map[p.id] = p.title)
+  );
+  return map;
+}
+
+export async function updateProfile(
+  client: SupabaseClient,
+  id: string,
+  input: {
+    display_name: string;
+    region: string;
+    city: string | null;
+    country_flag: string;
+  }
+) {
+  const { error } = await client.from("profiles").update(input).eq("id", id);
+  if (error) throw error;
+}

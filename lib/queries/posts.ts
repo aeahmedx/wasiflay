@@ -19,7 +19,7 @@ export const POST_TYPES: { value: PostType; label: string; hint: string }[] = [
 
 export type Post = {
   id: string;
-  author_id: string;
+  author_id: string | null; // null when anonymous and not yours
   type: PostType;
   title: string;
   body: string;
@@ -34,7 +34,7 @@ export type Post = {
 export type Answer = {
   id: string;
   post_id: string;
-  author_id: string;
+  author_id: string | null; // null when anonymous and not yours
   body: string;
   is_anonymous: boolean;
   helpful_count: number;
@@ -64,9 +64,8 @@ export async function getLatestPosts(
   limit = 30
 ): Promise<Post[]> {
   let query = client
-    .from("posts")
+    .from("public_posts")
     .select(POST_FIELDS)
-    .eq("is_removed", false)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -90,9 +89,8 @@ export async function getTrendingPosts(
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   let query = client
-    .from("posts")
+    .from("public_posts")
     .select(POST_FIELDS)
-    .eq("is_removed", false)
     .gte("created_at", since)
     .order("created_at", { ascending: false })
     .limit(120);
@@ -115,10 +113,9 @@ export async function getPost(
   id: string
 ): Promise<Post | null> {
   const { data, error } = await client
-    .from("posts")
+    .from("public_posts")
     .select(POST_FIELDS)
     .eq("id", id)
-    .eq("is_removed", false)
     .maybeSingle();
 
   if (error) throw error;
@@ -131,10 +128,9 @@ export async function getAnswers(
   postId: string
 ): Promise<Answer[]> {
   const { data, error } = await client
-    .from("answers")
+    .from("public_answers")
     .select(ANSWER_FIELDS)
     .eq("post_id", postId)
-    .eq("is_removed", false)
     .order("helpful_count", { ascending: false })
     .order("created_at", { ascending: true });
 
@@ -195,10 +191,14 @@ export async function createAnswer(
  */
 export async function getAuthorsFor(
   client: SupabaseClient,
-  items: { author_id: string; is_anonymous: boolean }[]
+  items: { author_id: string | null; is_anonymous: boolean }[]
 ): Promise<Record<string, Author>> {
   const ids = Array.from(
-    new Set(items.filter((i) => !i.is_anonymous).map((i) => i.author_id))
+    new Set(
+      items
+        .filter((i) => !i.is_anonymous && i.author_id)
+        .map((i) => i.author_id as string)
+    )
   );
   if (ids.length === 0) return {};
 

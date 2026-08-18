@@ -80,11 +80,17 @@ export default async function PostPage({
           )}
 
           <p className="mt-3 text-sm text-stone-500">
-            <span dir="auto">
-              {post.is_anonymous
-                ? "Anonymous"
-                : authors[post.author_id]?.display_name ?? "Someone"}
-            </span>
+            {post.is_anonymous || !post.author_id ? (
+              <span dir="auto">Anonymous</span>
+            ) : (
+              <Link
+                href={`/profile/${post.author_id}`}
+                className="text-stone-700 underline underline-offset-2"
+                dir="auto"
+              >
+                {authors[post.author_id]?.display_name ?? "Someone"}
+              </Link>
+            )}
             {` · ${regionName(regions, post.region)}`} ·{" "}
             {relativeTime(post.created_at)}
           </p>
@@ -110,11 +116,17 @@ export default async function PostPage({
                 className="rounded-lg border border-stone-200 bg-white px-4 py-4"
               >
                 <p className="text-sm text-stone-500 mb-1.5">
-                  <span dir="auto">
-                    {answer.is_anonymous
-                      ? "Anonymous"
-                      : authors[answer.author_id]?.display_name ?? "Someone"}
-                  </span>{" "}
+                  {answer.is_anonymous || !answer.author_id ? (
+                    <span dir="auto">Anonymous</span>
+                  ) : (
+                    <Link
+                      href={`/profile/${answer.author_id}`}
+                      className="text-stone-700 underline underline-offset-2"
+                      dir="auto"
+                    >
+                      {authors[answer.author_id]?.display_name ?? "Someone"}
+                    </Link>
+                  )}{" "}
                   · {relativeTime(answer.created_at)}
                 </p>
 

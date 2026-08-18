@@ -54,6 +54,9 @@ export function PostCard({
       </h2>
 
       <p className="mt-2 text-sm text-stone-500">
+        {/* Not a link: nesting an anchor inside the card's Link is invalid
+            HTML and breaks keyboard navigation. Tap the post, then the
+            author name on the detail page. */}
         <span dir="auto">
           {post.is_anonymous ? "Anonymous" : author?.display_name ?? "Someone"}
         </span>

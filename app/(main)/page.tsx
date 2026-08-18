@@ -46,12 +46,20 @@ export default async function HomePage({
             Wasif Lay
           </h1>
           {profile ? (
-            <Link
-              href="/rooms"
-              className="text-sm text-emerald-800 underline underline-offset-4"
-            >
-              Rooms
-            </Link>
+            <span className="flex items-center gap-4">
+              <Link
+                href="/rooms"
+                className="text-sm text-emerald-800 underline underline-offset-4"
+              >
+                Rooms
+              </Link>
+              <Link
+                href={`/profile/${profile.id}`}
+                className="text-sm text-emerald-800 underline underline-offset-4"
+              >
+                Profile
+              </Link>
+            </span>
           ) : (
             <Link
               href="/signup"
@@ -131,7 +139,7 @@ export default async function HomePage({
               <li key={post.id}>
                 <PostCard
                   post={post}
-                  author={authors[post.author_id]}
+                  author={post.author_id ? authors[post.author_id] : undefined}
                   regionLabel={regionName(regions, post.region)}
                 />
               </li>
