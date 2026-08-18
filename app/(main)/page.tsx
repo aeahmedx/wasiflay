@@ -94,12 +94,12 @@ export default async function HomePage({
               { key: "trending", label: "Trending" },
             ].map((t) => {
               const active = t.key === tab;
-              const query =
-                params.region === "all"
-                  ? "&region=all"
-                  : params.region
-                  ? `&region=${params.region}`
-                  : "";
+              // Always carry the current region choice, including "all".
+              const query = params.region
+                ? `&region=${params.region}`
+                : region
+                ? `&region=${region}`
+                : "&region=all";
               return (
                 <Link
                   key={t.key}
@@ -140,7 +140,11 @@ export default async function HomePage({
                 <PostCard
                   post={post}
                   author={post.author_id ? authors[post.author_id] : undefined}
-                  regionLabel={regionName(regions, post.region)}
+                  regionLabel={
+                    post.region
+                      ? regionName(regions, post.region)
+                      : "All regions"
+                  }
                 />
               </li>
             ))}

@@ -92,7 +92,7 @@ export type ProfilePost = {
   id: string;
   title: string;
   type: "question" | "recommendation" | "announcement";
-  region: string;
+  region: string | null; // null = all regions
   answer_count: number;
   helpful_count: number;
   created_at: string;

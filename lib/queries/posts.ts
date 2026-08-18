@@ -24,7 +24,7 @@ export type Post = {
   title: string;
   body: string;
   city: string | null;
-  region: string;
+  region: string | null; // null = all regions
   is_anonymous: boolean;
   answer_count: number;
   helpful_count: number;
@@ -69,7 +69,8 @@ export async function getLatestPosts(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (region) query = query.eq("region", region);
+  // A null-region post belongs to every feed.
+  if (region) query = query.or(`region.eq.${region},region.is.null`);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -95,7 +96,8 @@ export async function getTrendingPosts(
     .order("created_at", { ascending: false })
     .limit(120);
 
-  if (region) query = query.eq("region", region);
+  // A null-region post belongs to every feed.
+  if (region) query = query.or(`region.eq.${region},region.is.null`);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -146,21 +148,24 @@ export async function createPost(
     title: string;
     body: string;
     city: string | null;
-    region: string;
+    region: string | null;
     is_anonymous: boolean;
   }
-): Promise<Post> {
+): Promise<{ id: string }> {
+  // Only `id` is read back. Migration 0004 revoked SELECT on author_id for
+  // authenticated, so selecting the full row here fails with permission
+  // denied even though the insert itself succeeds.
   const { data, error } = await client
     .from("posts")
     .insert(input)
-    .select(POST_FIELDS)
+    .select("id")
     .single();
 
   if (error) {
     if (isRateLimit(error)) throw new RateLimitError();
     throw error;
   }
-  return data as Post;
+  return data as { id: string };
 }
 
 export async function createAnswer(
@@ -171,18 +176,15 @@ export async function createAnswer(
     body: string;
     is_anonymous: boolean;
   }
-): Promise<Answer> {
-  const { data, error } = await client
-    .from("answers")
-    .insert(input)
-    .select(ANSWER_FIELDS)
-    .single();
+): Promise<void> {
+  // No read-back: see the note in createPost. The page refreshes and picks
+  // the answer up through public_answers.
+  const { error } = await client.from("answers").insert(input);
 
   if (error) {
     if (isRateLimit(error)) throw new RateLimitError();
     throw error;
   }
-  return data as Answer;
 }
 
 /**
@@ -265,5 +267,33 @@ export async function removeVote(
     .eq("target_type", target)
     .eq("target_id", targetId);
 
+  if (error) throw error;
+}
+
+
+// ---------------------------------------------------------------------
+// Editing (own content only — enforced by RLS + column grants)
+// ---------------------------------------------------------------------
+
+export async function updatePost(
+  client: SupabaseClient,
+  id: string,
+  input: {
+    title: string;
+    body: string;
+    region: string | null;
+    is_anonymous: boolean;
+  }
+): Promise<void> {
+  const { error } = await client.from("posts").update(input).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateAnswer(
+  client: SupabaseClient,
+  id: string,
+  body: string
+): Promise<void> {
+  const { error } = await client.from("answers").update({ body }).eq("id", id);
   if (error) throw error;
 }

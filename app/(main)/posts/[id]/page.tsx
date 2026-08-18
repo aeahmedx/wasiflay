@@ -7,8 +7,8 @@ import {
   getMyVotes,
   getPost,
 } from "@/lib/queries/posts";
-import { HelpfulButton } from "@/components/posts/helpful-button";
 import { AnswerComposer } from "@/components/posts/answer-composer";
+import { AnswerItem } from "@/components/posts/answer-item";
 import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { getRegions, regionName } from "@/lib/queries/regions";
@@ -48,6 +48,8 @@ export default async function PostPage({
       )
     : new Set<string>();
 
+  const isMine = Boolean(userId) && post.author_id === userId;
+
   return (
     <div className="min-h-dvh bg-stone-50 flex flex-col">
       <div className="flex-1 max-w-md w-full mx-auto px-4 pt-5 pb-6">
@@ -59,9 +61,19 @@ export default async function PostPage({
         </Link>
 
         <article className="mt-4 rounded-lg border border-stone-200 bg-white px-4 py-4">
-          <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900">
-            {TYPE_LABEL[post.type]}
-          </span>
+          <div className="flex items-start justify-between gap-3">
+            <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900">
+              {TYPE_LABEL[post.type]}
+            </span>
+            {isMine && (
+              <Link
+                href={`/posts/${post.id}/edit`}
+                className="shrink-0 text-sm text-stone-600 underline underline-offset-4"
+              >
+                Edit
+              </Link>
+            )}
+          </div>
 
           <h1
             className="mt-2 text-xl font-semibold leading-snug text-stone-900"
@@ -91,7 +103,7 @@ export default async function PostPage({
                 {authors[post.author_id]?.display_name ?? "Someone"}
               </Link>
             )}
-            {` · ${regionName(regions, post.region)}`} ·{" "}
+            {` · ${post.region ? regionName(regions, post.region) : "All regions"}`} ·{" "}
             {relativeTime(post.created_at)}
           </p>
         </article>
@@ -111,42 +123,17 @@ export default async function PostPage({
         ) : (
           <ul className="space-y-2">
             {answers.map((answer) => (
-              <li
+              <AnswerItem
                 key={answer.id}
-                className="rounded-lg border border-stone-200 bg-white px-4 py-4"
-              >
-                <p className="text-sm text-stone-500 mb-1.5">
-                  {answer.is_anonymous || !answer.author_id ? (
-                    <span dir="auto">Anonymous</span>
-                  ) : (
-                    <Link
-                      href={`/profile/${answer.author_id}`}
-                      className="text-stone-700 underline underline-offset-2"
-                      dir="auto"
-                    >
-                      {authors[answer.author_id]?.display_name ?? "Someone"}
-                    </Link>
-                  )}{" "}
-                  · {relativeTime(answer.created_at)}
-                </p>
-
-                <p
-                  className="whitespace-pre-wrap break-words text-stone-900"
-                  dir="auto"
-                >
-                  {answer.body}
-                </p>
-
-                <div className="mt-3">
-                  <HelpfulButton
-                    target="answer"
-                    targetId={answer.id}
-                    initialCount={answer.helpful_count}
-                    initiallyVoted={votedAnswers.has(answer.id)}
-                    canVote={Boolean(userId) && answer.author_id !== userId}
-                  />
-                </div>
-              </li>
+                answer={answer}
+                authorName={
+                  (answer.author_id &&
+                    authors[answer.author_id]?.display_name) ||
+                  "Someone"
+                }
+                userId={userId}
+                initiallyVoted={votedAnswers.has(answer.id)}
+              />
             ))}
           </ul>
         )}

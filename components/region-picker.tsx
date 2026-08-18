@@ -6,8 +6,11 @@ import type { Region } from "@/lib/queries/regions";
 
 /**
  * Replaces the old two-state city toggle. Someone in Conshohocken and
- * someone in Camden both belong to Philadelphia Metro — the dropdown lets
- * them see that feed, or any other, or everything.
+ * someone in Camden both belong to Philadelphia Metro.
+ *
+ * "All regions" must send region=all explicitly. Sending no parameter
+ * falls back to the profile's own region, which made the option look
+ * broken — you selected All and landed back in your own region.
  */
 export function RegionPicker({
   regions,
@@ -23,8 +26,7 @@ export function RegionPicker({
 
   function change(value: string) {
     setPending(true);
-    const query = value === "all" ? "" : `&region=${value}`;
-    router.push(`/?tab=${tab}${query}`);
+    router.push(`/?tab=${tab}&region=${value}`);
     router.refresh();
     setPending(false);
   }

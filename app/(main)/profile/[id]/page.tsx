@@ -10,6 +10,7 @@ import {
 } from "@/lib/queries/profiles";
 import { getRegions, regionName } from "@/lib/queries/regions";
 import { relativeTime } from "@/components/posts/post-card";
+import { SignOutButton } from "@/app/(main)/sign-out-button";
 
 const TYPE_LABEL = {
   question: "Question",
@@ -183,7 +184,7 @@ export default async function ProfilePage({
                     {p.title}
                   </h2>
                   <p className="mt-1.5 text-sm text-stone-500">
-                    {regionName(regions, p.region)} ·{" "}
+                    {p.region ? regionName(regions, p.region) : "All regions"} ·{" "}
                     {relativeTime(p.created_at)} · {p.answer_count}{" "}
                     {p.answer_count === 1 ? "answer" : "answers"}
                   </p>
@@ -194,9 +195,14 @@ export default async function ProfilePage({
         )}
 
         {profile.is_self && (
-          <p className="mt-6 text-xs leading-relaxed text-stone-500">
-            Anonymous posts and answers never appear on your profile.
-          </p>
+          <>
+            <p className="mt-6 text-xs leading-relaxed text-stone-500">
+              Anonymous posts and answers never appear on your profile.
+            </p>
+            <div className="mt-6 border-t border-stone-200 pt-5">
+              <SignOutButton />
+            </div>
+          </>
         )}
       </div>
     </main>
