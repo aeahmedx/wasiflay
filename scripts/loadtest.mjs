@@ -45,7 +45,7 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const URL = env.NEXT_PUBLIC_SUPABASE_URL;
+const URL = (env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/+$/, "");
 const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICE = env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -65,17 +65,29 @@ const { data: room, error: roomError } = await admin
   .eq("slug", ROOM_SLUG)
   .maybeSingle();
 
-if (roomError || !room) {
-  console.error(`Room "${ROOM_SLUG}" not found.`);
+if (roomError) {
+  console.error(`\nQuery failed: ${roomError.message}`);
+  if (roomError.hint) console.error(`Hint: ${roomError.hint}`);
+  if (roomError.code === "42501") {
+    console.error("\nservice_role lacks table privileges. Run migration 0002.");
+  }
+  process.exit(1);
+}
+if (!room) {
+  console.error(`Room "${ROOM_SLUG}" does not exist. Check the rooms table.`);
   process.exit(1);
 }
 
-const { data: author } = await admin
+const { data: author, error: authorError } = await admin
   .from("profiles")
   .select("id")
   .limit(1)
   .maybeSingle();
 
+if (authorError) {
+  console.error(`\nProfile lookup failed: ${authorError.message}`);
+  process.exit(1);
+}
 if (!author) {
   console.error("No profile exists to author probe messages. Sign up first.");
   process.exit(1);

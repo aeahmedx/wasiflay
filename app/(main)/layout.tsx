@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { profileExists } from "@/lib/queries/profiles";
+import React from "react";
 
 /**
  * Profile gate (SPEC 2.2).

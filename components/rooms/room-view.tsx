@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRoomMessages } from "@/lib/hooks/use-room-messages";
 import { usePresenceCount } from "@/lib/hooks/use-presence";
@@ -224,12 +225,12 @@ export function RoomView({
             </button>
           </div>
         ) : (
-          <a
-            href="/signup"
+          <Link
+            href={`/signup?next=${encodeURIComponent(`/rooms/${room.slug}`)}`}
             className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
           >
             Sign in to join the conversation
-          </a>
+          </Link>
         )}
         {overLimit && (
           <p className="mt-1.5 text-xs text-red-700">

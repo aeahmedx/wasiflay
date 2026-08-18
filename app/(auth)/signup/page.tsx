@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { safeNext } from "@/lib/safe-next";
 
 const ERRORS: Record<string, string> = {
   missing_code: "Sign-in didn't complete. Try again.",
@@ -11,14 +12,18 @@ const ERRORS: Record<string, string> = {
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Where to land after sign-in. Set from ?next= so someone who hits the
+  // sign-in prompt inside a room returns to that room, not to Home.
+  const [next, setNext] = useState("/");
 
-  // Read the callback error from the URL directly. Deliberately NOT
-  // useSearchParams() — that hook opts the route out of prerendering and
-  // fails the production build unless wrapped in Suspense. This has no
-  // such constraint.
+  // Read the callback error and return path from the URL directly.
+  // Deliberately NOT useSearchParams() — that hook opts the route out of
+  // prerendering and fails the production build unless wrapped in Suspense.
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("error");
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("error");
     if (code && ERRORS[code]) setError(ERRORS[code]);
+    setNext(safeNext(params.get("next")));
   }, []);
 
   async function signInWithGoogle() {
@@ -29,7 +34,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createProfile } from "@/lib/queries/profiles";
+import { safeNext } from "@/lib/safe-next";
 
 const FLAGS = [
   { code: "SD", label: "Sudan" },
@@ -34,6 +35,9 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+  // Carried through from ?next= so a first-time user who signed in from a
+  // room lands back in that room after finishing their profile.
+  const [next, setNext] = useState("/");
 
   const [displayName, setDisplayName] = useState("");
   const [city, setCity] = useState("");
@@ -44,6 +48,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setNext(safeNext(new URLSearchParams(window.location.search).get("next")));
+
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
@@ -81,7 +87,7 @@ export default function OnboardingPage() {
         date_of_birth: dob,
         country_flag: flag,
       });
-      router.replace("/");
+      router.replace(next);
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
