@@ -11,6 +11,7 @@ import { HelpfulButton } from "@/components/posts/helpful-button";
 import { AnswerComposer } from "@/components/posts/answer-composer";
 import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { getRegions, regionName } from "@/lib/queries/regions";
 
 const TYPE_LABEL = {
   question: "Question",
@@ -29,9 +30,10 @@ export default async function PostPage({
   const post = await getPost(supabase, id);
   if (!post) notFound();
 
-  const [answers, { data: auth }] = await Promise.all([
+  const [answers, { data: auth }, regions] = await Promise.all([
     getAnswers(supabase, post.id),
     supabase.auth.getUser(),
+    getRegions(supabase),
   ]);
 
   const userId = auth.user?.id ?? null;
@@ -83,7 +85,7 @@ export default async function PostPage({
                 ? "Anonymous"
                 : authors[post.author_id]?.display_name ?? "Someone"}
             </span>
-            {post.city ? ` · ${post.city}` : ""} ·{" "}
+            {` · ${regionName(regions, post.region)}`} ·{" "}
             {relativeTime(post.created_at)}
           </p>
         </article>

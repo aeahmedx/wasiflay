@@ -14,6 +14,7 @@ export type PublicProfile = {
   contribution_count: number;
   helpful_count: number;
   created_at: string;
+  region: string;
   city: string | null; // auto-nulled for minors by the view
   is_self: boolean;
 };
@@ -55,7 +56,8 @@ export async function profileExists(
 export type CreateProfileInput = {
   id: string;
   display_name: string;
-  city: string;
+  region: string;
+  city: string | null;
   date_of_birth: string; // YYYY-MM-DD
   country_flag: string;
 };

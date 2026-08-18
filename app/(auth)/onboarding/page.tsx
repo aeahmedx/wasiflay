@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createProfile } from "@/lib/queries/profiles";
+import { getRegions, type Region } from "@/lib/queries/regions";
 import { safeNext } from "@/lib/safe-next";
 
 const FLAGS = [
@@ -35,11 +36,11 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  // Carried through from ?next= so a first-time user who signed in from a
-  // room lands back in that room after finishing their profile.
   const [next, setNext] = useState("/");
 
+  const [regions, setRegions] = useState<Region[]>([]);
   const [displayName, setDisplayName] = useState("");
+  const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
   const [dob, setDob] = useState("");
   const [flag, setFlag] = useState("SD");
@@ -51,6 +52,11 @@ export default function OnboardingPage() {
     setNext(safeNext(new URLSearchParams(window.location.search).get("next")));
 
     const supabase = createClient();
+
+    getRegions(supabase)
+      .then(setRegions)
+      .catch(() => setError("Couldn't load regions. Reload the page."));
+
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
         router.replace("/signup");
@@ -68,7 +74,7 @@ export default function OnboardingPage() {
   const valid =
     displayName.trim().length >= 2 &&
     displayName.trim().length <= 50 &&
-    city.trim().length > 0 &&
+    region.length > 0 &&
     !Number.isNaN(age) &&
     age >= 13 &&
     age < 120;
@@ -83,7 +89,8 @@ export default function OnboardingPage() {
       await createProfile(supabase, {
         id: userId,
         display_name: displayName.trim(),
-        city: city.trim(),
+        region,
+        city: city.trim() || null,
         date_of_birth: dob,
         country_flag: flag,
       });
@@ -147,17 +154,45 @@ export default function OnboardingPage() {
 
           <div>
             <label
+              htmlFor="region"
+              className="block text-sm font-medium text-stone-800 mb-1.5"
+            >
+              Your community
+            </label>
+            <select
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+            >
+              <option value="" disabled>
+                Choose a region
+              </option>
+              {regions.map((r) => (
+                <option key={r.slug} value={r.slug}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-stone-500">
+              Pick the metro area you&apos;re part of, not just your town.
+            </p>
+          </div>
+
+          <div>
+            <label
               htmlFor="city"
               className="block text-sm font-medium text-stone-800 mb-1.5"
             >
-              City
+              Town{" "}
+              <span className="font-normal text-stone-500">(optional)</span>
             </label>
             <input
               id="city"
               dir="auto"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Philadelphia"
+              placeholder="Conshohocken"
               className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
@@ -205,7 +240,7 @@ export default function OnboardingPage() {
             )}
             {isMinor && (
               <p className="mt-2 text-sm text-stone-600">
-                Your city stays private.
+                Your town stays private.
               </p>
             )}
           </div>

@@ -10,20 +10,23 @@ import {
   type PostType,
 } from "@/lib/queries/posts";
 import { safeNext } from "@/lib/safe-next";
+import type { Region } from "@/lib/queries/regions";
 
 export function CreatePostForm({
   userId,
-  defaultCity,
+  defaultRegion,
+  regions,
 }: {
   userId: string;
-  defaultCity: string | null;
+  defaultRegion: string;
+  regions: Region[];
 }) {
   const router = useRouter();
 
   const [type, setType] = useState<PostType>("question");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [city, setCity] = useState(defaultCity ?? "");
+  const [region, setRegion] = useState(defaultRegion);
   const [anonymous, setAnonymous] = useState(false);
   const [prefillType, setPrefillType] = useState(false);
 
@@ -54,7 +57,8 @@ export function CreatePostForm({
         type,
         title: trimmedTitle,
         body: body.trim(),
-        city: city.trim() || null,
+        city: null,
+        region,
         is_anonymous: anonymous,
       });
       router.replace(safeNext(`/posts/${post.id}`));
@@ -155,19 +159,27 @@ export function CreatePostForm({
 
           <div>
             <label
-              htmlFor="city"
+              htmlFor="region"
               className="block text-sm font-medium text-stone-800 mb-1.5"
             >
-              City{" "}
-              <span className="font-normal text-stone-500">(optional)</span>
+              Region
             </label>
-            <input
-              id="city"
-              dir="auto"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
+            <select
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
-            />
+            >
+              {regions.map((r) => (
+                <option key={r.slug} value={r.slug}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-stone-500">
+              Who sees this in their feed. Change it if you&apos;re asking
+              about somewhere else.
+            </p>
           </div>
 
           {/* SPEC 5.1 — anonymous is prominent, not buried. It is what

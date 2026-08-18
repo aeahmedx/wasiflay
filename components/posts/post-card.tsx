@@ -30,9 +30,11 @@ export function relativeTime(iso: string): string {
 export function PostCard({
   post,
   author,
+  regionLabel,
 }: {
   post: Post;
   author: Author | undefined;
+  regionLabel: string;
 }) {
   return (
     <Link
@@ -47,10 +49,7 @@ export function PostCard({
         {TYPE_LABEL[post.type]}
       </span>
 
-      <h2
-        className="mt-2 font-medium text-stone-900 leading-snug"
-        dir="auto"
-      >
+      <h2 className="mt-2 font-medium text-stone-900 leading-snug" dir="auto">
         {post.title}
       </h2>
 
@@ -58,7 +57,8 @@ export function PostCard({
         <span dir="auto">
           {post.is_anonymous ? "Anonymous" : author?.display_name ?? "Someone"}
         </span>
-        {post.city ? ` · ${post.city}` : ""} · {relativeTime(post.created_at)}
+        {regionLabel ? ` · ${regionLabel}` : ""} ·{" "}
+        {relativeTime(post.created_at)}
       </p>
 
       <p className="mt-1.5 text-sm text-stone-600">

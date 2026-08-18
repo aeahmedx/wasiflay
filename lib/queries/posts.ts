@@ -24,6 +24,7 @@ export type Post = {
   title: string;
   body: string;
   city: string | null;
+  region: string;
   is_anonymous: boolean;
   answer_count: number;
   helpful_count: number;
@@ -41,7 +42,7 @@ export type Answer = {
 };
 
 const POST_FIELDS =
-  "id, author_id, type, title, body, city, is_anonymous, answer_count, helpful_count, created_at";
+  "id, author_id, type, title, body, city, region, is_anonymous, answer_count, helpful_count, created_at";
 const ANSWER_FIELDS =
   "id, post_id, author_id, body, is_anonymous, helpful_count, created_at";
 
@@ -59,7 +60,7 @@ function isRateLimit(error: { message?: string } | null): boolean {
 /** SPEC 3.3 — Latest tab. */
 export async function getLatestPosts(
   client: SupabaseClient,
-  city: string | null,
+  region: string | null,
   limit = 30
 ): Promise<Post[]> {
   let query = client
@@ -69,7 +70,7 @@ export async function getLatestPosts(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (city) query = query.eq("city", city);
+  if (region) query = query.eq("region", region);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -83,7 +84,7 @@ export async function getLatestPosts(
  */
 export async function getTrendingPosts(
   client: SupabaseClient,
-  city: string | null,
+  region: string | null,
   limit = 30
 ): Promise<Post[]> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -96,7 +97,7 @@ export async function getTrendingPosts(
     .order("created_at", { ascending: false })
     .limit(120);
 
-  if (city) query = query.eq("city", city);
+  if (region) query = query.eq("region", region);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -149,6 +150,7 @@ export async function createPost(
     title: string;
     body: string;
     city: string | null;
+    region: string;
     is_anonymous: boolean;
   }
 ): Promise<Post> {
