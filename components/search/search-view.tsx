@@ -268,7 +268,7 @@ export function SearchView({
                 <div className="mt-4 flex flex-col gap-2">
                   <Link
                       href={`/create?q=${encoded}`}
-                      className="rounded-lg bg-emerald-800 px-4 py-3 text-center font-medium text-white"
+                      className="rounded-lg bg-emerald-800 px-4 py-3 text-center font-medium text-stone-0"
                   >
                     Ask the community
                   </Link>

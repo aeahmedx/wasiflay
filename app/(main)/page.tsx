@@ -6,6 +6,8 @@ import {
   getAuthorsFor,
   getLatestPosts,
   getTrendingPosts,
+  getUnansweredCount,
+  getUnansweredPosts,
 } from "@/lib/queries/posts";
 import { PostCard } from "@/components/posts/post-card";
 import { RegionPicker } from "@/components/region-picker";
@@ -21,8 +23,12 @@ export default async function HomePage({
   searchParams: Promise<Search>;
 }) {
   const params = await searchParams;
-  const trending = params.tab === "trending";
-  const tab = trending ? "trending" : "latest";
+  const tab =
+    params.tab === "trending"
+      ? "trending"
+      : params.tab === "needs"
+      ? "needs"
+      : "latest";
 
   const supabase = await createClient();
   const [profile, regions] = await Promise.all([
@@ -39,9 +45,14 @@ export default async function HomePage({
       ? null
       : params.region ?? profile?.region ?? null;
 
-  const posts = trending
-    ? await getTrendingPosts(supabase, region)
-    : await getLatestPosts(supabase, region);
+  const [posts, unanswered] = await Promise.all([
+    tab === "trending"
+      ? getTrendingPosts(supabase, region)
+      : tab === "needs"
+      ? getUnansweredPosts(supabase, region)
+      : getLatestPosts(supabase, region),
+    getUnansweredCount(supabase, region),
+  ]);
   const authors = await getAuthorsFor(supabase, posts);
 
   // Carry the current region choice across tab switches, including "all".
@@ -113,6 +124,13 @@ export default async function HomePage({
                 label: "Trending",
                 href: `/?tab=trending${regionQuery}`,
               },
+              {
+                // Count sits on the tab rather than becoming another
+                // badge — one signal on screen reads, two is noise.
+                key: "needs",
+                label: unanswered > 0 ? `Needs answers (${unanswered})` : "Needs answers",
+                href: `/?tab=needs${regionQuery}`,
+              },
             ]}
           />
 
@@ -121,20 +139,44 @@ export default async function HomePage({
 
         {posts.length === 0 ? (
           <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
-            <p className="text-stone-600 mb-4">
-              {region
-                ? `Nothing in ${regionName(regions, region)} yet.`
-                : "Nothing here yet."}
-            </p>
-            <Link
-              href="/create"
-              className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
-            >
-              Ask the first question
-            </Link>
+            {/* An empty needs-queue is good news, so "nothing here yet"
+                would be exactly the wrong message. */}
+            {tab === "needs" ? (
+              <>
+                <p className="text-stone-600 mb-4">
+                  Every question here has an answer. Nice.
+                </p>
+                <Link
+                  href={`/?tab=latest${regionQuery}`}
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+                >
+                  Back to the feed
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-stone-600 mb-4">
+                  {region
+                    ? `Nothing in ${regionName(regions, region)} yet.`
+                    : "Nothing here yet."}
+                </p>
+                <Link
+                  href="/create"
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+                >
+                  Ask the first question
+                </Link>
+              </>
+            )}
           </div>
         ) : (
-          <ul className="space-y-2">
+          <>
+            {tab === "needs" && (
+              <p className="mb-3 text-sm text-stone-600">
+                Nobody has answered these yet. If you know, say so.
+              </p>
+            )}
+            <ul className="space-y-2">
             {posts.map((post) => (
               <li key={post.id}>
                 <PostCard
@@ -148,7 +190,8 @@ export default async function HomePage({
                 />
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </div>
 

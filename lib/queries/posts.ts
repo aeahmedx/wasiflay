@@ -297,3 +297,55 @@ export async function updateAnswer(
   const { error } = await client.from("answers").update({ body }).eq("id", id);
   if (error) throw error;
 }
+
+
+// ---------------------------------------------------------------------
+// Needs an answer
+//
+// Questions with zero answers. Not "zero helpful answers" — a question
+// with one mediocre answer still reads as answered to anyone arriving,
+// and a helpful-vote being withdrawn would silently push it back into
+// the queue, which nobody would understand.
+//
+// Recommendations and announcements are excluded: neither is waiting on
+// anything.
+// ---------------------------------------------------------------------
+
+export async function getUnansweredPosts(
+  client: SupabaseClient,
+  region: string | null,
+  limit = 30
+): Promise<Post[]> {
+  let query = client
+    .from("public_posts")
+    .select(POST_FIELDS)
+    .eq("type", "question")
+    .eq("answer_count", 0)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  // A region-less post belongs to every feed.
+  if (region) query = query.or(`region.eq.${region},region.is.null`);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as Post[];
+}
+
+/** Count only — head request, no rows transferred. */
+export async function getUnansweredCount(
+  client: SupabaseClient,
+  region: string | null
+): Promise<number> {
+  let query = client
+    .from("public_posts")
+    .select("id", { count: "exact", head: true })
+    .eq("type", "question")
+    .eq("answer_count", 0);
+
+  if (region) query = query.or(`region.eq.${region},region.is.null`);
+
+  const { count, error } = await query;
+  if (error) return 0;
+  return count ?? 0;
+}

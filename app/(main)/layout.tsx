@@ -4,6 +4,7 @@ import { profileExists } from "@/lib/queries/profiles";
 import { getUnreadCount } from "@/lib/queries/notifications";
 import { InstallPrompt } from "@/components/install-prompt";
 import { TabBar } from "@/components/tab-bar";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -35,6 +36,9 @@ export default async function MainLayout({
 
   return (
     <>
+      {/* Installed as a PWA there's no browser chrome, so the reflex of
+          swiping down to refresh would otherwise do nothing. */}
+      <PullToRefresh />
       {children}
       <TabBar userId={user?.id ?? null} initialUnread={unread} />
       {/* Not on signup or onboarding — interrupting someone mid-signup to
