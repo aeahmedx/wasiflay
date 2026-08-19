@@ -110,7 +110,7 @@ export default async function HomePage({
           What do you need?
         </Link>
 
-        <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="mb-3">
           <ViewTabs
             activeKey={tab}
             tabs={[
@@ -125,15 +125,24 @@ export default async function HomePage({
                 href: `/?tab=trending${regionQuery}`,
               },
               {
-                // Count sits on the tab rather than becoming another
-                // badge — one signal on screen reads, two is noise.
+                // Count lives on the tab rather than becoming another
+                // badge — one signal reads, two is noise. Capped at 99+
+                // so the label can't stretch the row.
                 key: "needs",
-                label: unanswered > 0 ? `Needs answers (${unanswered})` : "Needs answers",
+                label:
+                  unanswered > 0
+                    ? `Needs answers (${unanswered > 99 ? "99+" : unanswered})`
+                    : "Needs answers",
                 href: `/?tab=needs${regionQuery}`,
               },
             ]}
           />
+        </div>
 
+        {/* Own row: three tabs and a region name competing for one line
+            is what forced the scroll. The picker carries the active tab
+            through, so switching region keeps you where you were. */}
+        <div className="mb-4">
           <RegionPicker regions={regions} current={region} tab={tab} />
         </div>
 
