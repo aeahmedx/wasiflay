@@ -14,9 +14,11 @@ import { createAnswer, RateLimitError } from "@/lib/queries/posts";
 export function AnswerComposer({
   postId,
   userId,
+  isBanned = false,
 }: {
   postId: string;
   userId: string | null;
+  isBanned?: boolean;
 }) {
   const router = useRouter();
   const [body, setBody] = useState("");
@@ -51,6 +53,17 @@ export function AnswerComposer({
     } finally {
       setSaving(false);
     }
+  }
+
+  if (userId && isBanned) {
+    return (
+      <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
+        <p className="text-center text-sm text-stone-600">
+          Your account is suspended, so you can&apos;t answer right now. You
+          can still read everything.
+        </p>
+      </div>
+    );
   }
 
   if (!userId) {

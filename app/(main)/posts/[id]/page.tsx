@@ -169,7 +169,11 @@ export default async function PostPage({
       </div>
 
       <ErrorBoundary label="The answer box">
-        <AnswerComposer postId={post.id} userId={userId} />
+        <AnswerComposer
+          postId={post.id}
+          userId={userId}
+          isBanned={profile?.is_banned ?? false}
+        />
       </ErrorBoundary>
     </div>
   );

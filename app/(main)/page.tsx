@@ -57,37 +57,42 @@ export default async function HomePage({
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
             Wasif Lay
           </h1>
-          {profile ? (
-            <span className="flex items-center gap-4">
-              <Link
-                href="/rooms"
-                className="text-sm text-emerald-800 underline underline-offset-4"
-              >
-                Rooms
-              </Link>
-              <Link
-                href={`/profile/${profile.id}`}
-                className="text-sm text-emerald-800 underline underline-offset-4"
-              >
-                Profile
-              </Link>
-              {isStaff && (
-                <Link
-                  href="/mod"
-                  className="text-sm text-emerald-800 underline underline-offset-4"
-                >
-                  Mod{openReports > 0 ? ` (${openReports})` : ""}
-                </Link>
-              )}
-            </span>
-          ) : (
+          <span className="flex items-center gap-4">
+            {/* Rooms is readable signed out — it's the liveliest thing on
+                the site and the best reason to sign up. Hiding it behind
+                auth loses people who would have joined for it. */}
             <Link
-              href="/signup"
+              href="/rooms"
               className="text-sm text-emerald-800 underline underline-offset-4"
             >
-              Sign in
+              Rooms
             </Link>
-          )}
+            {profile ? (
+              <>
+                <Link
+                  href={`/profile/${profile.id}`}
+                  className="text-sm text-emerald-800 underline underline-offset-4"
+                >
+                  Profile
+                </Link>
+                {isStaff && (
+                  <Link
+                    href="/mod"
+                    className="text-sm text-emerald-800 underline underline-offset-4"
+                  >
+                    Mod{openReports > 0 ? ` (${openReports})` : ""}
+                  </Link>
+                )}
+              </>
+            ) : (
+              <Link
+                href="/signup"
+                className="text-sm text-emerald-800 underline underline-offset-4"
+              >
+                Sign in
+              </Link>
+            )}
+          </span>
         </div>
 
         {/* SPEC 3.1 — search is the centrepiece. */}
@@ -160,14 +165,12 @@ export default async function HomePage({
         )}
       </div>
 
-      {profile && (
-        <Link
-          href="/create"
-          className="fixed bottom-6 right-6 rounded-full bg-emerald-800 px-5 py-3.5 font-medium text-white shadow-lg"
-        >
-          Post
-        </Link>
-      )}
+      <Link
+        href={profile ? "/create" : "/signup?next=%2Fcreate"}
+        className="fixed bottom-6 right-6 rounded-full bg-emerald-800 px-5 py-3.5 font-medium text-white shadow-lg"
+      >
+        Post
+      </Link>
     </main>
   );
 }

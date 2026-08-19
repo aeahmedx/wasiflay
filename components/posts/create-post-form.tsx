@@ -10,15 +10,20 @@ import {
   type PostType,
 } from "@/lib/queries/posts";
 import { safeNext } from "@/lib/safe-next";
+import { BackLink } from "@/components/back-link";
 import type { Region } from "@/lib/queries/regions";
+
+const TITLE_PLACEHOLDER: Record<PostType, string> = {
+  question: "What do you want to ask?",
+  recommendation: "What do you want to share?",
+  announcement: "What's happening?",
+};
 
 export function CreatePostForm({
   userId,
-  defaultRegion,
   regions,
 }: {
   userId: string;
-  defaultRegion: string;
   regions: Region[];
 }) {
   const router = useRouter();
@@ -26,8 +31,11 @@ export function CreatePostForm({
   const [type, setType] = useState<PostType>("question");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  // "__all__" is the sentinel for a post with no region.
-  const [region, setRegion] = useState<string>(defaultRegion);
+  // Defaults to every region on purpose. Early on, a post scattered into
+  // one of 24 regional feeds reads as an empty product everywhere; a
+  // region-less post shows up in all of them. People narrow it when the
+  // question is genuinely local.
+  const [region, setRegion] = useState<string>("__all__");
   const [anonymous, setAnonymous] = useState(false);
   const [prefillType, setPrefillType] = useState(false);
 
@@ -77,7 +85,11 @@ export function CreatePostForm({
   return (
     <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900 mb-6">
+        {/* router.back(), so it returns wherever you came from — the feed,
+            a search, a zero-result screen. Submitting uses replace, so
+            the form never sits in history behind its own result. */}
+        <BackLink />
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 mb-6">
           New post
         </h1>
 
@@ -129,7 +141,7 @@ export function CreatePostForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
-              placeholder="Looking for a dentist near Philadelphia"
+              placeholder={TITLE_PLACEHOLDER[type]}
               className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
             {prefillType && (
@@ -179,8 +191,8 @@ export function CreatePostForm({
               ))}
             </select>
             <p className="mt-1.5 text-xs text-stone-500">
-              Who sees this in their feed. Pick All regions for something
-              that isn&apos;t tied to one place.
+              Everybody sees this. Pick a region if it&apos;s only useful
+              to people there.
             </p>
           </div>
 
