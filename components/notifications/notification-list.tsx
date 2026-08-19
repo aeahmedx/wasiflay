@@ -109,14 +109,14 @@ export function NotificationList({ userId }: { userId: string }) {
       {loading ? (
         <p className="text-stone-500">Loading…</p>
       ) : items.length === 0 ? (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center">
+        <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
           <p className="text-stone-600 mb-4">
             Nothing yet. Ask something and we&apos;ll tell you when someone
             answers.
           </p>
           <Link
             href="/create"
-            className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+            className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
           >
             Ask a question
           </Link>
@@ -129,7 +129,7 @@ export function NotificationList({ userId }: { userId: string }) {
                 href={n.post_id ? `/posts/${n.post_id}` : "/"}
                 className={`block rounded-lg border px-4 py-3.5 ${
                   n.is_read
-                    ? "border-stone-200 bg-white"
+                    ? "border-stone-200 bg-stone-0"
                     : "border-emerald-200 bg-emerald-50/50"
                 }`}
               >

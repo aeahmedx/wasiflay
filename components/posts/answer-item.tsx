@@ -49,7 +49,7 @@ export function AnswerItem({
   }
 
   return (
-    <li className="rounded-lg border border-stone-200 bg-white px-4 py-4">
+    <li className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">
       <p className="text-sm text-stone-500 mb-1.5">
         {answer.is_anonymous || !answer.author_id ? (
           <span dir="auto">Anonymous</span>
@@ -80,7 +80,7 @@ export function AnswerItem({
             <button
               onClick={save}
               disabled={!draft.trim() || saving}
-              className="rounded-lg bg-emerald-800 px-3.5 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-lg bg-emerald-800 px-3.5 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
             >
               {saving ? "Saving…" : "Save"}
             </button>

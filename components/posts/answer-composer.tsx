@@ -57,7 +57,7 @@ export function AnswerComposer({
 
   if (userId && isBanned) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
         <p className="text-center text-sm text-stone-600">
           Your account is suspended, so you can&apos;t answer right now. You
           can still read everything.
@@ -68,10 +68,10 @@ export function AnswerComposer({
 
   if (!userId) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
         <Link
           href={`/signup?next=${encodeURIComponent(`/posts/${postId}`)}`}
-          className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+          className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
         >
           Sign in to answer
         </Link>
@@ -80,7 +80,7 @@ export function AnswerComposer({
   }
 
   return (
-    <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
+    <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
       {error && (
         <p role="alert" className="mb-2 text-sm text-red-700">
           {error}
@@ -111,7 +111,7 @@ export function AnswerComposer({
         <button
           onClick={submit}
           disabled={!body.trim() || saving}
-          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-white disabled:opacity-40"
+          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-stone-0 disabled:opacity-40"
         >
           {saving ? "Posting…" : "Answer"}
         </button>

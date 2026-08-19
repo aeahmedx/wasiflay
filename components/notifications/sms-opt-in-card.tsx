@@ -79,7 +79,7 @@ export function SmsOptInCard({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-4">
+    <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">
       {step === "offer" && (
         <>
           <p className="font-medium text-stone-900">
@@ -92,7 +92,7 @@ export function SmsOptInCard({ userId }: { userId: string }) {
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => setStep("phone")}
-              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white"
+              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0"
             >
               Yes, text me
             </button>
@@ -135,7 +135,7 @@ export function SmsOptInCard({ userId }: { userId: string }) {
             <button
               onClick={sendCode}
               disabled={!normalised || busy}
-              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
             >
               {busy ? "Sending…" : "Send code"}
             </button>
@@ -169,7 +169,7 @@ export function SmsOptInCard({ userId }: { userId: string }) {
             <button
               onClick={verify}
               disabled={code.trim().length < 4 || busy}
-              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
             >
               {busy ? "Checking…" : "Confirm"}
             </button>

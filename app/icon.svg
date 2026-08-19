@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Wasif Lay">
+  <rect width="64" height="64" rx="14" fill="#F5A623"/>
+  <!--
+    Arms sit at 90° to the pole and point outward, then the whole
+    assembly rotates 30° counter-clockwise. Scaled to 0.84 so the tips
+    don't clip the rounded corners after rotation.
+  -->
+  <g transform="translate(32 32) rotate(-30) scale(0.84) translate(-32 -32)"
+     fill="#FFFFFF" stroke="#2B1D07" stroke-width="3" stroke-linejoin="round">
+    <!-- pole -->
+    <path d="M29.5 7 h5 v50 h-5 z"/>
+    <!-- top arm, pointing right -->
+    <path d="M34.5 13 h17 l6 5.5 -6 5.5 h-17 z"/>
+    <!-- middle arm, pointing left -->
+    <path d="M29.5 26 h-16 l-6 5.5 6 5.5 h16 z"/>
+    <!-- lower arm, pointing right -->
+    <path d="M34.5 39 h14 l6 5.5 -6 5.5 h-14 z"/>
+  </g>
+</svg>

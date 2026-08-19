@@ -148,7 +148,7 @@ export default function OnboardingPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={50}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
 
@@ -163,7 +163,7 @@ export default function OnboardingPage() {
               id="region"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             >
               <option value="" disabled>
                 Choose a region
@@ -193,7 +193,7 @@ export default function OnboardingPage() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Conshohocken"
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
 
@@ -208,7 +208,7 @@ export default function OnboardingPage() {
               id="flag"
               value={flag}
               onChange={(e) => setFlag(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             >
               {FLAGS.map((f) => (
                 <option key={f.code} value={f.code}>
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
               value={dob}
               onChange={(e) => setDob(e.target.value)}
               max={new Date().toISOString().slice(0, 10)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
             {tooYoung && (
               <p className="mt-2 text-sm text-red-700">
@@ -249,7 +249,7 @@ export default function OnboardingPage() {
         <button
           onClick={submit}
           disabled={!valid || saving}
-          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
+          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
         >
           {saving ? "Saving…" : "Continue"}
         </button>

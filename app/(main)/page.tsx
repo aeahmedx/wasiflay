@@ -102,7 +102,7 @@ export default async function HomePage({
         {/* SPEC 3.1 — search is the centrepiece. */}
         <Link
           href="/search"
-          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-500 mb-5"
+          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-500 mb-5"
         >
           <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" aria-hidden>
             <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
@@ -137,7 +137,7 @@ export default async function HomePage({
         </div>
 
         {posts.length === 0 ? (
-          <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center">
+          <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
             <p className="text-stone-600 mb-4">
               {region
                 ? `Nothing in ${regionName(regions, region)} yet.`
@@ -145,7 +145,7 @@ export default async function HomePage({
             </p>
             <Link
               href="/create"
-              className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+              className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
             >
               Ask the first question
             </Link>
@@ -171,7 +171,7 @@ export default async function HomePage({
 
       <Link
         href={profile ? "/create" : "/signup?next=%2Fcreate"}
-        className="fixed bottom-6 right-6 rounded-full bg-emerald-800 px-5 py-3.5 font-medium text-white shadow-lg"
+        className="fixed bottom-6 right-6 rounded-full bg-emerald-800 px-5 py-3.5 font-medium text-stone-0 shadow-lg"
       >
         Post
       </Link>

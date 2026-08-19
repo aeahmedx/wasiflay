@@ -109,7 +109,7 @@ export function SearchView({
             autoComplete="off"
             placeholder="What do you need?"
             aria-label="Search"
-            className="w-full rounded-lg border border-stone-300 bg-white py-3 pl-10 pr-10 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+            className="w-full rounded-lg border border-stone-300 bg-stone-0 py-3 pl-10 pr-10 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
           />
           {query.length > 0 && (
             <button
@@ -143,7 +143,7 @@ export function SearchView({
             onChange={(e) =>
               setRegion(e.target.value === "all" ? null : e.target.value)
             }
-            className="rounded-full border border-stone-300 bg-white py-1.5 pl-3.5 pr-8 text-sm text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+            className="rounded-full border border-stone-300 bg-stone-0 py-1.5 pl-3.5 pr-8 text-sm text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
           >
             <option value="all">All regions</option>
             {regions.map((r) => (
@@ -166,7 +166,7 @@ export function SearchView({
                 <button
                   key={term}
                   onClick={() => setQuery(term)}
-                  className="rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-sm text-stone-700 hover:border-stone-400"
+                  className="rounded-full border border-stone-300 bg-stone-0 px-3.5 py-1.5 text-sm text-stone-700 hover:border-stone-400"
                 >
                   {term}
                 </button>
@@ -195,7 +195,7 @@ export function SearchView({
                 <li key={r.id}>
                   <Link
                     href={`/listings/${r.id}`}
-                    className="block rounded-lg border border-stone-200 bg-white px-4 py-3.5 hover:border-stone-300"
+                    className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-3.5 hover:border-stone-300"
                   >
                     <p className="font-medium text-stone-900" dir="auto">
                       {r.title}
@@ -233,7 +233,7 @@ export function SearchView({
                 <li key={r.id}>
                   <Link
                     href={`/posts/${r.id}`}
-                    className="block rounded-lg border border-stone-200 bg-white px-4 py-3.5 hover:border-stone-300"
+                    className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-3.5 hover:border-stone-300"
                   >
                     <p className="font-medium leading-snug text-stone-900" dir="auto">
                       {r.title}
@@ -258,7 +258,7 @@ export function SearchView({
           creates the thing they were looking for. Never a blank screen.
         */}
         {showEmptyState && (
-          <div className="mt-8 rounded-lg border border-stone-200 bg-white px-4 py-6">
+          <div className="mt-8 rounded-lg border border-stone-200 bg-stone-0 px-4 py-6">
             <p className="text-stone-800" dir="auto">
               Nothing for “{trimmed}” yet.
             </p>
@@ -269,7 +269,7 @@ export function SearchView({
             <div className="mt-4 flex flex-col gap-2">
               <Link
                 href={`/create?q=${encoded}`}
-                className="rounded-lg bg-emerald-800 px-4 py-3 text-center font-medium text-white"
+                className="rounded-lg bg-emerald-800 px-4 py-3 text-center font-medium text-stone-0"
               >
                 Ask the community
               </Link>

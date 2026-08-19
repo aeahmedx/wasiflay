@@ -63,7 +63,7 @@ export default async function PostPage({
       <div className="flex-1 max-w-md w-full mx-auto px-4 pt-5 pb-6">
         <BackLink />
 
-        <article className="mt-4 rounded-lg border border-stone-200 bg-white px-4 py-4">
+        <article className="mt-4 rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900">
               {TYPE_LABEL[post.type]}
@@ -155,7 +155,7 @@ export default async function PostPage({
         </h2>
 
         {answers.length === 0 ? (
-          <p className="rounded-lg border border-stone-200 bg-white px-4 py-6 text-center text-stone-600">
+          <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-6 text-center text-stone-600">
             Be the first to answer this.
           </p>
         ) : (

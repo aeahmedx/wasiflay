@@ -209,7 +209,7 @@ export function ReportQueue({
             aria-pressed={status === t.key}
             className={`rounded-full px-3.5 py-1.5 text-sm ${
               status === t.key
-                ? "bg-stone-900 text-white"
+                ? "bg-stone-900 text-stone-0"
                 : "text-stone-600 hover:bg-stone-200"
             }`}
           >
@@ -230,7 +230,7 @@ export function ReportQueue({
       {loading ? (
         <p className="text-stone-500">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-stone-600">
+        <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
           {status === "open"
             ? "Nothing waiting. The queue is clear."
             : `No ${status} items.`}
@@ -247,7 +247,7 @@ export function ReportQueue({
             return (
               <li
                 key={`${item.target_type}:${item.target_id}`}
-                className={`rounded-lg border bg-white px-4 py-4 ${
+                className={`rounded-lg border bg-stone-0 px-4 py-4 ${
                   theirs ? "border-stone-200 opacity-60" : "border-stone-300"
                 }`}
               >
@@ -345,7 +345,7 @@ export function ReportQueue({
                     <button
                       onClick={() => act(item, "claim")}
                       disabled={busy === k}
-                      className="rounded-lg bg-emerald-800 px-3.5 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                      className="rounded-lg bg-emerald-800 px-3.5 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                     >
                       {theirs ? "Take over" : "Claim to handle"}
                     </button>
@@ -363,7 +363,7 @@ export function ReportQueue({
                         <button
                           onClick={() => act(item, "remove")}
                           disabled={busy === k}
-                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                         >
                           Remove
                         </button>
@@ -396,7 +396,7 @@ export function ReportQueue({
                             <button
                               onClick={() => act(item, "ban")}
                               disabled={busy === k}
-                              className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                              className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                             >
                               Confirm ban
                             </button>
@@ -424,7 +424,7 @@ export function ReportQueue({
                             <button
                               onClick={() => act(item, "delete")}
                               disabled={busy === k}
-                              className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                              className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                             >
                               Confirm: delete forever
                             </button>

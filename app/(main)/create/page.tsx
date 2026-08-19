@@ -25,7 +25,7 @@ export default async function CreatePage() {
       <main className="min-h-dvh bg-stone-50 px-4 py-6">
         <div className="max-w-md mx-auto">
           <BackLink />
-          <div className="mt-6 rounded-lg border border-stone-200 bg-white px-4 py-6">
+          <div className="mt-6 rounded-lg border border-stone-200 bg-stone-0 px-4 py-6">
             <h1 className="text-lg font-medium text-stone-900">
               Your account is suspended
             </h1>

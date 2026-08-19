@@ -26,13 +26,13 @@ export default async function RoomsPage() {
           they want to join it — not before.
         */}
         {!profile && (
-          <div className="mb-5 rounded-lg border border-stone-200 bg-white px-4 py-4">
+          <div className="mb-5 rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">
             <p className="text-stone-700">
               You can read along without an account. Sign in to join in.
             </p>
             <Link
               href="/signup?next=%2Frooms"
-              className="mt-3 inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+              className="mt-3 inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
             >
               Sign in
             </Link>
@@ -49,7 +49,7 @@ export default async function RoomsPage() {
               <li key={room.id}>
                 <Link
                   href={`/rooms/${room.slug}`}
-                  className="block rounded-lg border border-stone-200 bg-white px-4 py-4 hover:border-stone-300"
+                  className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-4 hover:border-stone-300"
                 >
                   <span className="font-medium text-stone-900">
                     {room.name}

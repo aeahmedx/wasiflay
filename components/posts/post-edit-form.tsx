@@ -83,7 +83,7 @@ export function PostEditForm({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={200}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               />
             </div>
 
@@ -102,7 +102,7 @@ export function PostEditForm({
                   onChange={(e) => setBody(e.target.value)}
                   rows={5}
                   maxLength={10000}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               />
             </div>
 
@@ -117,7 +117,7 @@ export function PostEditForm({
                   id="region"
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               >
                 <option value="__all__">All regions</option>
                 {regions.map((r) => (
@@ -128,7 +128,7 @@ export function PostEditForm({
               </select>
             </div>
 
-            <label className="flex items-start gap-3 rounded-lg border border-stone-300 bg-white px-3.5 py-3 cursor-pointer">
+            <label className="flex items-start gap-3 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 cursor-pointer">
               <input
                   type="checkbox"
                   checked={anonymous}
@@ -149,7 +149,7 @@ export function PostEditForm({
           <button
               onClick={save}
               disabled={!valid || saving}
-              className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white disabled:opacity-40"
+              className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}
           </button>

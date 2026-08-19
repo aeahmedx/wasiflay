@@ -53,7 +53,7 @@ export default async function ProfilePage({
         <div className="max-w-md mx-auto">
           <BackLink />
 
-          <section className="mt-4 rounded-lg border border-stone-200 bg-white px-4 py-5">
+          <section className="mt-4 rounded-lg border border-stone-200 bg-stone-0 px-4 py-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1
@@ -120,7 +120,7 @@ export default async function ProfilePage({
 
           {showAnswers ? (
               answers.length === 0 ? (
-                  <p className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-stone-600">
+                  <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
                     {profile.is_self
                         ? "You haven't answered anything yet."
                         : "No answers yet."}
@@ -131,7 +131,7 @@ export default async function ProfilePage({
                         <li key={a.id}>
                           <Link
                               href={`/posts/${a.post_id}`}
-                              className="block rounded-lg border border-stone-200 bg-white px-4 py-4 hover:border-stone-300"
+                              className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-4 hover:border-stone-300"
                           >
                             <p className="text-sm text-stone-500" dir="auto">
                               on {titles[a.post_id] ?? "a post"}
@@ -154,7 +154,7 @@ export default async function ProfilePage({
                   </ul>
               )
           ) : posts.length === 0 ? (
-              <p className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-stone-600">
+              <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
                 {profile.is_self
                     ? "You haven't posted anything yet."
                     : "No posts yet."}
@@ -165,7 +165,7 @@ export default async function ProfilePage({
                     <li key={p.id}>
                       <Link
                           href={`/posts/${p.id}`}
-                          className="block rounded-lg border border-stone-200 bg-white px-4 py-4 hover:border-stone-300"
+                          className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-4 hover:border-stone-300"
                       >
                   <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900">
                     {TYPE_LABEL[p.type]}

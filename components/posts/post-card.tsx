@@ -39,7 +39,7 @@ export function PostCard({
   return (
     <Link
       href={`/posts/${post.id}`}
-      className="block rounded-lg border border-stone-200 bg-white px-4 py-4 hover:border-stone-300"
+      className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-4 hover:border-stone-300"
     >
       <span
         className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${

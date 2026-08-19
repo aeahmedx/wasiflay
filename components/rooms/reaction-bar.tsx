@@ -42,7 +42,7 @@ export function ReactionBar({
                   className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition ${
                       entry.mine
                           ? "border-emerald-700 bg-emerald-50"
-                          : "border-stone-300 bg-white"
+                          : "border-stone-300 bg-stone-0"
                   } ${canReact ? "hover:border-stone-400" : "opacity-70"}`}
               >
                 <span aria-hidden>{emoji}</span>
@@ -58,13 +58,13 @@ export function ReactionBar({
                   onClick={() => setPicking((v) => !v)}
                   aria-label="Add reaction"
                   aria-expanded={picking}
-                  className="rounded-full border border-stone-300 bg-white px-2 py-0.5 text-xs text-stone-500 hover:border-stone-400"
+                  className="rounded-full border border-stone-300 bg-stone-0 px-2 py-0.5 text-xs text-stone-500 hover:border-stone-400"
               >
                 +
               </button>
 
               {picking && (
-                  <div className="absolute bottom-full left-0 z-10 mb-1 flex gap-0.5 rounded-full border border-stone-300 bg-white px-1.5 py-1 shadow-sm">
+                  <div className="absolute bottom-full left-0 z-10 mb-1 flex gap-0.5 rounded-full border border-stone-300 bg-stone-0 px-1.5 py-1 shadow-sm">
                     {EMOJI.map((emoji) => (
                         <button
                             key={emoji}

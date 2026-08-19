@@ -39,7 +39,7 @@ export function RegionPicker({
                 value={current ?? "all"}
                 onChange={(e) => change(e.target.value)}
                 disabled={pending}
-                className="appearance-none rounded-full border border-stone-300 bg-white py-1.5 pl-3.5 pr-8 text-sm text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                className="appearance-none rounded-full border border-stone-300 bg-stone-0 py-1.5 pl-3.5 pr-8 text-sm text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             >
                 <option value="all">All regions</option>
                 {regions.map((r) => (

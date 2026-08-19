@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { profileExists } from "@/lib/queries/profiles";
-import React from "react";
+import { InstallPrompt } from "@/components/install-prompt";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -27,5 +27,12 @@ export default async function MainLayout({
     if (!hasProfile) redirect("/onboarding");
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {/* Not on signup or onboarding — interrupting someone mid-signup to
+          ask them to install is the wrong moment. */}
+      <InstallPrompt />
+    </>
+  );
 }

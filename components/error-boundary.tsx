@@ -31,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
         </p>
         <button
           onClick={() => this.setState({ crashed: false })}
-          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-white"
+          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-stone-0"
         >
           Reload
         </button>

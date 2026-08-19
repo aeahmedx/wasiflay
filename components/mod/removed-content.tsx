@@ -143,7 +143,7 @@ export function RemovedContent({ isAdmin }: { isAdmin: boolean }) {
             aria-pressed={kind === k.key}
             className={`rounded-full px-3.5 py-1.5 text-sm ${
               kind === k.key
-                ? "bg-stone-900 text-white"
+                ? "bg-stone-900 text-stone-0"
                 : "text-stone-600 hover:bg-stone-200"
             }`}
           >
@@ -164,7 +164,7 @@ export function RemovedContent({ isAdmin }: { isAdmin: boolean }) {
       {loading ? (
         <p className="text-stone-500">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-stone-600">
+        <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
           Nothing is removed right now.
         </p>
       ) : (
@@ -174,7 +174,7 @@ export function RemovedContent({ isAdmin }: { isAdmin: boolean }) {
             return (
               <li
                 key={k}
-                className="rounded-lg border border-stone-200 bg-white px-4 py-4"
+                className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700">
@@ -226,7 +226,7 @@ export function RemovedContent({ isAdmin }: { isAdmin: boolean }) {
                         <button
                           onClick={() => purge(item)}
                           disabled={busy === k}
-                          className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                         >
                           Confirm: delete forever
                         </button>

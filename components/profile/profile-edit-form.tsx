@@ -97,7 +97,7 @@ export function ProfileEditForm({
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   maxLength={50}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               />
             </div>
 
@@ -112,7 +112,7 @@ export function ProfileEditForm({
                   id="region"
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               >
                 {regions.map((r) => (
                     <option key={r.slug} value={r.slug}>
@@ -135,7 +135,7 @@ export function ProfileEditForm({
                   dir="auto"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               />
             </div>
 
@@ -150,7 +150,7 @@ export function ProfileEditForm({
                   id="flag"
                   value={flag}
                   onChange={(e) => setFlag(e.target.value)}
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+                  className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
               >
                 {FLAGS.map((f) => (
                     <option key={f.code} value={f.code}>
@@ -164,7 +164,7 @@ export function ProfileEditForm({
           <button
               onClick={save}
               disabled={!valid || saving}
-              className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white disabled:opacity-40"
+              className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}
           </button>

@@ -83,7 +83,7 @@ export default function SignupPage() {
         <button
           onClick={signInWithGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-3.5 font-medium text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 font-medium text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-60"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
             <path

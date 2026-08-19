@@ -37,7 +37,7 @@ export function ViewTabs({
             aria-pressed={active}
             className={`rounded-full px-3.5 py-1.5 text-sm transition ${
               active
-                ? "bg-stone-900 text-white"
+                ? "bg-stone-900 text-stone-0"
                 : "text-stone-600 hover:bg-stone-200"
             }`}
           >

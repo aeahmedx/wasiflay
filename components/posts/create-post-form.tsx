@@ -115,7 +115,7 @@ export function CreatePostForm({
                 className={`rounded-lg border px-2 py-2.5 text-sm transition ${
                   type === t.value
                     ? "border-emerald-800 bg-emerald-50 text-emerald-900 font-medium"
-                    : "border-stone-300 bg-white text-stone-700"
+                    : "border-stone-300 bg-stone-0 text-stone-700"
                 }`}
               >
                 {t.label}
@@ -142,7 +142,7 @@ export function CreatePostForm({
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               placeholder={TITLE_PLACEHOLDER[type]}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
             {prefillType && (
               <p className="mt-1.5 text-xs text-stone-500">
@@ -166,7 +166,7 @@ export function CreatePostForm({
               onChange={(e) => setBody(e.target.value)}
               rows={5}
               maxLength={10000}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
 
@@ -181,7 +181,7 @@ export function CreatePostForm({
               id="region"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             >
               <option value="__all__">All regions</option>
               {regions.map((r) => (
@@ -198,7 +198,7 @@ export function CreatePostForm({
 
           {/* SPEC 5.1 — anonymous is prominent, not buried. It is what
               makes immigration, legal and money questions askable. */}
-          <label className="flex items-start gap-3 rounded-lg border border-stone-300 bg-white px-3.5 py-3 cursor-pointer">
+          <label className="flex items-start gap-3 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 cursor-pointer">
             <input
               type="checkbox"
               checked={anonymous}
@@ -219,7 +219,7 @@ export function CreatePostForm({
         <button
           onClick={submit}
           disabled={!valid || saving}
-          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white disabled:opacity-40"
+          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
         >
           {saving ? "Posting…" : "Post"}
         </button>

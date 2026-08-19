@@ -149,7 +149,7 @@ export function MessageMenu({
         </button>
 
         {open && (
-            <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border border-stone-300 bg-white p-2 shadow-lg">
+            <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-lg border border-stone-300 bg-stone-0 p-2 shadow-lg">
               {mode === "menu" ? (
                   <>
                     {isMine && canEdit && onEditAction && (
@@ -213,7 +213,7 @@ export function MessageMenu({
                           type="button"
                           onClick={deleteMine}
                           disabled={state === "working"}
-                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                       >
                         {state === "working" ? "Deleting…" : "Delete"}
                       </button>
@@ -237,7 +237,7 @@ export function MessageMenu({
                           type="button"
                           onClick={hardDelete}
                           disabled={state === "working"}
-                          className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                       >
                         {state === "working" ? "Deleting…" : "Delete forever"}
                       </button>
@@ -276,7 +276,7 @@ export function MessageMenu({
                           type="button"
                           onClick={report}
                           disabled={!reason || state === "working"}
-                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                       >
                         Send
                       </button>
