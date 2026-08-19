@@ -193,7 +193,7 @@ export default async function ProfilePage({
             <p className="mt-6 text-xs leading-relaxed text-stone-500">
               Anonymous posts and answers never appear on your profile.
             </p>
-            <div className="mt-6 flex flex-col gap-3 border-t border-stone-200 pt-5">
+            <div className="mt-6 flex flex-col items-center gap-3 border-t border-stone-200 pt-5">
               {/* Renders nothing when already installed or when the
                   browser can't install, so it never offers a dead end. */}
               <AddToHomeScreen />

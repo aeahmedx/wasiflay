@@ -35,7 +35,7 @@ export function AddToHomeScreen() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col items-center">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -45,7 +45,7 @@ export function AddToHomeScreen() {
         Add to home screen
       </button>
       {open && (
-        <div className="mt-2 rounded-lg border border-stone-200 bg-stone-0 px-3 py-2.5">
+        <div className="mt-2 w-full rounded-lg border border-stone-200 bg-stone-0 px-3 py-2.5">
           <IOSInstallSteps />
         </div>
       )}
