@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { profileExists } from "@/lib/queries/profiles";
+import { getUnreadCount } from "@/lib/queries/notifications";
 import { InstallPrompt } from "@/components/install-prompt";
+import { TabBar } from "@/components/tab-bar";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -27,9 +29,14 @@ export default async function MainLayout({
     if (!hasProfile) redirect("/onboarding");
   }
 
+  // Seeded server-side so the badge never flashes a wrong number; the
+  // bar keeps it current over realtime from there.
+  const unread = user ? await getUnreadCount(supabase) : 0;
+
   return (
     <>
       {children}
+      <TabBar userId={user?.id ?? null} initialUnread={unread} />
       {/* Not on signup or onboarding — interrupting someone mid-signup to
           ask them to install is the wrong moment. */}
       <InstallPrompt />

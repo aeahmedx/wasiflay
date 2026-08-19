@@ -11,8 +11,7 @@ import { PostCard } from "@/components/posts/post-card";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
 import { getOpenReportCount } from "@/lib/queries/moderation";
-import { getUnreadCount } from "@/lib/queries/notifications";
-import { HeaderCounts } from "@/components/header-counts";
+import { ModBadge } from "@/components/mod-badge";
 
 type Search = { tab?: string; region?: string };
 
@@ -33,7 +32,6 @@ export default async function HomePage({
 
   const isStaff = profile?.role === "moderator" || profile?.role === "admin";
   const openReports = isStaff ? await getOpenReportCount(supabase) : 0;
-  const unread = profile ? await getUnreadCount(supabase) : 0;
 
   // No ?region= means "my region". An explicit ?region=all means everything.
   const region =
@@ -61,26 +59,11 @@ export default async function HomePage({
             Wasif Lay
           </h1>
           <span className="flex items-center gap-4">
-            {/* Rooms is readable signed out — it's the liveliest thing on
-                the site and the best reason to sign up. Hiding it behind
-                auth loses people who would have joined for it. */}
-            <Link
-              href="/rooms"
-              className="text-sm text-emerald-800 underline underline-offset-4"
-            >
-              Rooms
-            </Link>
             {profile ? (
               <>
-                {/* Counts are live from here: server-rendered numbers are
-                    correct once and then go stale, which made the mod
-                    badge useless while reports were arriving. */}
-                <HeaderCounts
-                  userId={profile.id}
-                  isStaff={isStaff}
-                  initialUnread={unread}
-                  initialReports={openReports}
-                />
+                {/* Rooms and Activity moved to the tab bar; what's left
+                    is the account and, for staff, the queue. */}
+                <ModBadge isStaff={isStaff} initialReports={openReports} />
                 <Link
                   href={`/profile/${profile.id}`}
                   className="text-sm text-emerald-800 underline underline-offset-4"
@@ -169,12 +152,6 @@ export default async function HomePage({
         )}
       </div>
 
-      <Link
-        href={profile ? "/create" : "/signup?next=%2Fcreate"}
-        className="fixed bottom-6 right-6 rounded-full bg-emerald-800 px-5 py-3.5 font-medium text-stone-0 shadow-lg"
-      >
-        Post
-      </Link>
     </main>
   );
 }
