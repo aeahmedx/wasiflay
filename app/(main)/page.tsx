@@ -11,6 +11,8 @@ import { PostCard } from "@/components/posts/post-card";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
 import { getOpenReportCount } from "@/lib/queries/moderation";
+import { getUnreadCount } from "@/lib/queries/notifications";
+import { HeaderCounts } from "@/components/header-counts";
 
 type Search = { tab?: string; region?: string };
 
@@ -31,6 +33,7 @@ export default async function HomePage({
 
   const isStaff = profile?.role === "moderator" || profile?.role === "admin";
   const openReports = isStaff ? await getOpenReportCount(supabase) : 0;
+  const unread = profile ? await getUnreadCount(supabase) : 0;
 
   // No ?region= means "my region". An explicit ?region=all means everything.
   const region =
@@ -69,20 +72,21 @@ export default async function HomePage({
             </Link>
             {profile ? (
               <>
+                {/* Counts are live from here: server-rendered numbers are
+                    correct once and then go stale, which made the mod
+                    badge useless while reports were arriving. */}
+                <HeaderCounts
+                  userId={profile.id}
+                  isStaff={isStaff}
+                  initialUnread={unread}
+                  initialReports={openReports}
+                />
                 <Link
                   href={`/profile/${profile.id}`}
                   className="text-sm text-emerald-800 underline underline-offset-4"
                 >
                   Profile
                 </Link>
-                {isStaff && (
-                  <Link
-                    href="/mod"
-                    className="text-sm text-emerald-800 underline underline-offset-4"
-                  >
-                    Mod{openReports > 0 ? ` (${openReports})` : ""}
-                  </Link>
-                )}
               </>
             ) : (
               <Link

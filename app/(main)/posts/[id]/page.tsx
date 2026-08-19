@@ -12,6 +12,7 @@ import { AnswerItem } from "@/components/posts/answer-item";
 import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BackLink } from "@/components/back-link";
+import { SmsOptInCard } from "@/components/notifications/sms-opt-in-card";
 import { ReportButton } from "@/components/report-button";
 import { AdminDeleteButton } from "@/components/mod/admin-delete-button";
 import { DeleteOwnButton } from "@/components/posts/delete-own-button";
@@ -136,6 +137,14 @@ export default async function PostPage({
             {relativeTime(post.created_at)}
           </p>
         </article>
+
+        {/* Offered here, not at signup: this is the moment someone
+            actually wants to know when their question gets answered. */}
+        {isMine && profile && !profile.sms_opt_in && (
+          <div className="mt-4">
+            <SmsOptInCard userId={profile.id} />
+          </div>
+        )}
 
         <h2 className="mt-6 mb-3 text-sm font-medium text-stone-700">
           {post.answer_count === 0

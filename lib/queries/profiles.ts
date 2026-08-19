@@ -17,7 +17,8 @@ export type PublicProfile = {
   region: string;
   city: string | null; // auto-nulled for minors by the view
   is_self: boolean;
-  is_banned: boolean; // own status only; always false for other people
+  is_banned: boolean;  // own status only; always false for other people
+  sms_opt_in: boolean; // own status only
 };
 
 /**
