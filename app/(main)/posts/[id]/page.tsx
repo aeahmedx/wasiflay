@@ -13,7 +13,10 @@ import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BackLink } from "@/components/back-link";
 import { ReportButton } from "@/components/report-button";
+import { AdminDeleteButton } from "@/components/mod/admin-delete-button";
+import { DeleteOwnButton } from "@/components/posts/delete-own-button";
 import { getRegions, regionName } from "@/lib/queries/regions";
+import { getCurrentProfile } from "@/lib/queries/profiles.server";
 
 const TYPE_LABEL = {
   question: "Question",
@@ -51,6 +54,8 @@ export default async function PostPage({
     : new Set<string>();
 
   const isMine = Boolean(userId) && post.author_id === userId;
+  const profile = await getCurrentProfile();
+  const isAdmin = profile?.role === "admin";
 
   return (
     <div className="min-h-dvh bg-stone-50 flex flex-col">
@@ -62,14 +67,30 @@ export default async function PostPage({
             <span className="inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900">
               {TYPE_LABEL[post.type]}
             </span>
-            {isMine && (
-              <Link
-                href={`/posts/${post.id}/edit`}
-                className="shrink-0 text-sm text-stone-600 underline underline-offset-4"
-              >
-                Edit
-              </Link>
-            )}
+            <span className="flex shrink-0 items-center gap-3">
+              {isMine && (
+                <>
+                  <Link
+                    href={`/posts/${post.id}/edit`}
+                    className="text-sm text-stone-600 underline underline-offset-4"
+                  >
+                    Edit
+                  </Link>
+                  <DeleteOwnButton
+                    targetType="post"
+                    targetId={post.id}
+                    redirectTo="/"
+                  />
+                </>
+              )}
+              {isAdmin && !isMine && (
+                <AdminDeleteButton
+                  targetType="post"
+                  targetId={post.id}
+                  redirectTo="/"
+                />
+              )}
+            </span>
           </div>
 
           <div className="mt-1">
@@ -80,6 +101,7 @@ export default async function PostPage({
                 userId={userId}
               />
             )}
+
           </div>
 
           <h1

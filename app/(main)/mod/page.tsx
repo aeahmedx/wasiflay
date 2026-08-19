@@ -1,15 +1,27 @@
 import { notFound } from "next/navigation";
+import { ViewTabs } from "@/components/view-tabs";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { ReportQueue } from "@/components/mod/report-queue";
+import { UserSearch } from "@/components/mod/user-search";
+import { RemovedContent } from "@/components/mod/removed-content";
 import { BackLink } from "@/components/back-link";
 import { ErrorBoundary } from "@/components/error-boundary";
 
-export default async function ModPage() {
+export default async function ModPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view } = await searchParams;
   const profile = await getCurrentProfile();
 
   // notFound rather than redirect: don't confirm the route exists to
   // someone who isn't staff.
   if (!profile || profile.role === "member") notFound();
+
+  const onUsers = view === "users";
+  const onRemoved = view === "removed";
+  const isAdmin = profile.role === "admin";
 
   return (
     <main className="min-h-dvh bg-stone-50 px-4 py-6">
@@ -18,13 +30,34 @@ export default async function ModPage() {
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
           Moderation
         </h1>
-        <p className="mt-1 mb-6 text-stone-600">
+        <p className="mt-1 mb-5 text-stone-600">
           Wasif Lay is for coordination, not conflict. Apply the rules the
           same way for everyone.
         </p>
 
-        <ErrorBoundary label="The moderation queue">
-          <ReportQueue isAdmin={profile.role === "admin"} />
+        <div className="mb-5">
+          <ViewTabs
+            activeKey={onUsers ? "users" : onRemoved ? "removed" : "reports"}
+            tabs={[
+              { key: "reports", label: "Reports", href: "/mod" },
+              { key: "users", label: "People", href: "/mod?view=users" },
+              {
+                key: "removed",
+                label: "Removed",
+                href: "/mod?view=removed",
+              },
+            ]}
+          />
+        </div>
+
+        <ErrorBoundary label="The moderation panel">
+          {onUsers ? (
+            <UserSearch isAdmin={isAdmin} viewerId={profile.id} />
+          ) : onRemoved ? (
+            <RemovedContent isAdmin={isAdmin} />
+          ) : (
+            <ReportQueue isAdmin={isAdmin} viewerId={profile.id} />
+          )}
         </ErrorBoundary>
       </div>
     </main>

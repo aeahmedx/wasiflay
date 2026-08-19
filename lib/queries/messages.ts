@@ -16,6 +16,9 @@ export type Message = {
   author_id: string;
   body: string | null;
   image_url: string | null;
+  image_width: number | null;
+  image_height: number | null;
+  edited_at: string | null;
   created_at: string;
 };
 
@@ -26,6 +29,9 @@ export type Author = {
 };
 
 export const MESSAGE_PAGE_SIZE = 60;
+
+const MESSAGE_FIELDS =
+  "id, room_id, author_id, body, image_url, image_width, image_height, edited_at, created_at";
 
 /** Raised by the DB trigger at >5 messages per 10s. */
 export class RateLimitError extends Error {
@@ -72,7 +78,7 @@ export async function getRecentMessages(
 ): Promise<Message[]> {
   const { data, error } = await client
     .from("messages")
-    .select("id, room_id, author_id, body, image_url, created_at")
+    .select(MESSAGE_FIELDS)
     .eq("room_id", roomId)
     .eq("is_removed", false)
     .order("created_at", { ascending: false })
@@ -90,7 +96,7 @@ export async function getMessagesSince(
 ): Promise<Message[]> {
   const { data, error } = await client
     .from("messages")
-    .select("id, room_id, author_id, body, image_url, created_at")
+    .select(MESSAGE_FIELDS)
     .eq("room_id", roomId)
     .eq("is_removed", false)
     .gt("created_at", sinceIso)
@@ -123,12 +129,19 @@ export async function getAuthors(
 
 export async function sendMessage(
   client: SupabaseClient,
-  input: { room_id: string; author_id: string; body: string }
+  input: {
+    room_id: string;
+    author_id: string;
+    body: string;
+    image_url?: string | null;
+    image_width?: number | null;
+    image_height?: number | null;
+  }
 ): Promise<Message> {
   const { data, error } = await client
     .from("messages")
     .insert(input)
-    .select("id, room_id, author_id, body, image_url, created_at")
+    .select(MESSAGE_FIELDS)
     .single();
 
   if (error) {
@@ -136,4 +149,15 @@ export async function sendMessage(
     throw error;
   }
   return data as Message;
+}
+
+
+/** Edits your own message. RLS restricts this to the author. */
+export async function updateMessage(
+  client: SupabaseClient,
+  id: string,
+  body: string
+): Promise<void> {
+  const { error } = await client.from("messages").update({ body }).eq("id", id);
+  if (error) throw error;
 }

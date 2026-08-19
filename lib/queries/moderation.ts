@@ -9,24 +9,47 @@ export type ReportTarget =
 
 export type ReportStatus = "open" | "actioned" | "dismissed";
 
+export type UserRole = "member" | "moderator" | "admin";
+
+/** One row per reported thing, not per report (0014). */
 export type QueueItem = {
-  report_id: string;
   target_type: ReportTarget;
   target_id: string;
-  reason: string;
-  status: ReportStatus;
-  reported_at: string;
-  reporter_id: string | null;
-  reporter_name: string | null;
+  report_count: number;
+  reasons: string | null;
+  first_reported: string;
+  last_reported: string;
+  reporter_names: string | null;
   author_id: string | null;
   author_name: string | null;
+  author_role: UserRole | null;
+  author_banned: boolean;
   preview: string | null;
+  image_url: string | null;
   is_anonymous: boolean;
   is_removed: boolean;
-  author_banned: boolean;
+  claimed_by: string | null;
+  claimed_name: string | null;
+  claim_fresh: boolean;
 };
 
-/** Anyone signed in can report. */
+export type ModUser = {
+  id: string;
+  display_name: string;
+  region: string | null;
+  city: string | null;
+  country_flag: string | null;
+  role: UserRole;
+  is_banned: boolean;
+  is_minor: boolean;
+  contribution_count: number;
+  helpful_count: number;
+  joined_at: string;
+  open_reports: number;
+};
+
+// ---- reporting (any signed-in user) ---------------------------------
+
 export async function createReport(
   client: SupabaseClient,
   input: {
@@ -40,11 +63,8 @@ export async function createReport(
   if (error) throw error;
 }
 
-/**
- * Staff only — enforced inside the RPC, not here. The function is
- * SECURITY DEFINER because the panel needs author_id and the content of
- * removed items, neither of which clients can read directly.
- */
+// ---- queue -----------------------------------------------------------
+
 export async function getReportQueue(
   client: SupabaseClient,
   status: ReportStatus = "open"
@@ -65,7 +85,49 @@ export async function getOpenReportCount(
   return (data as number) ?? 0;
 }
 
-// ---- actions. All guarded server-side by is_staff() / is_admin(). ----
+/** Returns false when someone else already holds a live claim. */
+export async function claimTarget(
+  client: SupabaseClient,
+  target: ReportTarget,
+  id: string
+): Promise<boolean> {
+  const { data, error } = await client.rpc("mod_claim_target", {
+    p_target: target,
+    p_id: id,
+  });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function releaseTarget(
+  client: SupabaseClient,
+  target: ReportTarget,
+  id: string
+): Promise<void> {
+  const { error } = await client.rpc("mod_release_target", {
+    p_target: target,
+    p_id: id,
+  });
+  if (error) throw error;
+}
+
+/** Resolves every open report against one target. */
+export async function resolveTarget(
+  client: SupabaseClient,
+  target: ReportTarget,
+  id: string,
+  status: ReportStatus
+): Promise<number> {
+  const { data, error } = await client.rpc("mod_resolve_target", {
+    p_target: target,
+    p_id: id,
+    p_status: status,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+// ---- actions ---------------------------------------------------------
 
 export async function modRemove(
   client: SupabaseClient,
@@ -103,14 +165,48 @@ export async function modSetBan(
   if (error) throw error;
 }
 
-export async function modResolveReport(
+// ---- people ----------------------------------------------------------
+
+export async function findUsers(
   client: SupabaseClient,
-  reportId: string,
-  status: ReportStatus
-): Promise<void> {
-  const { error } = await client.rpc("mod_resolve_report", {
-    p_report: reportId,
-    p_status: status,
+  query: string,
+  bannedOnly = false
+): Promise<ModUser[]> {
+  const { data, error } = await client.rpc("mod_find_users", {
+    p_query: query,
+    p_banned_only: bannedOnly,
+    p_limit: 50,
   });
   if (error) throw error;
+  return (data ?? []) as ModUser[];
+}
+
+export async function purgeUser(
+  client: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const { data, error } = await client.rpc("mod_purge_user", {
+    p_user: userId,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+
+/**
+ * Permanent deletion. Admin only, irreversible, and it cleans up the
+ * rows that have no foreign key to cascade through — votes and reports.
+ * Returns the number of top-level rows removed.
+ */
+export async function adminHardDelete(
+  client: SupabaseClient,
+  target: ReportTarget,
+  id: string
+): Promise<number> {
+  const { data, error } = await client.rpc("admin_hard_delete", {
+    p_target: target,
+    p_id: id,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
 }
