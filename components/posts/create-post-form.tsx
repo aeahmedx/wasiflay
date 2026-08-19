@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries/posts";
 import { safeNext } from "@/lib/safe-next";
 import { BackLink } from "@/components/back-link";
+import { Toggle } from "@/components/ui/toggle";
 import type { Region } from "@/lib/queries/regions";
 
 const TITLE_PLACEHOLDER: Record<PostType, string> = {
@@ -22,14 +23,23 @@ const TITLE_PLACEHOLDER: Record<PostType, string> = {
 export function CreatePostForm({
   userId,
   regions,
+  initialTitle = "",
 }: {
   userId: string;
   regions: Region[];
+  /**
+   * SPEC 4.3 — the zero-result search screen links here with ?q=.
+   * Read on the server and passed down, rather than pulled out of
+   * window.location in an effect: setting state synchronously inside an
+   * effect causes a second render pass before paint, and the prefilled
+   * title would visibly pop in.
+   */
+  initialTitle?: string;
 }) {
   const router = useRouter();
 
   const [type, setType] = useState<PostType>("question");
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState("");
   // Defaults to every region on purpose. Early on, a post scattered into
   // one of 24 regional feeds reads as an empty product everywhere; a
@@ -37,19 +47,10 @@ export function CreatePostForm({
   // question is genuinely local.
   const [region, setRegion] = useState<string>("__all__");
   const [anonymous, setAnonymous] = useState(false);
-  const [prefillType, setPrefillType] = useState(false);
+  const prefilled = initialTitle.length > 0;
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // SPEC 4.3 — the zero-result search screen links here with ?q=
-  useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q) {
-      setTitle(q);
-      setPrefillType(true);
-    }
-  }, []);
 
   const trimmedTitle = title.trim();
   const valid = trimmedTitle.length >= 5 && trimmedTitle.length <= 200;
@@ -115,7 +116,7 @@ export function CreatePostForm({
                 className={`rounded-lg border px-2 py-2.5 text-sm transition ${
                   type === t.value
                     ? "border-emerald-800 bg-emerald-50 text-emerald-900 font-medium"
-                    : "border-stone-300 bg-stone-0 text-stone-700"
+                    : "border-stone-300 bg-white text-stone-700"
                 }`}
               >
                 {t.label}
@@ -142,9 +143,9 @@ export function CreatePostForm({
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
               placeholder={TITLE_PLACEHOLDER[type]}
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
-            {prefillType && (
+            {prefilled && (
               <p className="mt-1.5 text-xs text-stone-500">
                 Filled in from your search. Edit it to read like a question.
               </p>
@@ -166,7 +167,7 @@ export function CreatePostForm({
               onChange={(e) => setBody(e.target.value)}
               rows={5}
               maxLength={10000}
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
 
@@ -181,7 +182,7 @@ export function CreatePostForm({
               id="region"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             >
               <option value="__all__">All regions</option>
               {regions.map((r) => (
@@ -197,29 +198,22 @@ export function CreatePostForm({
           </div>
 
           {/* SPEC 5.1 — anonymous is prominent, not buried. It is what
-              makes immigration, legal and money questions askable. */}
-          <label className="flex items-start gap-3 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={anonymous}
-              onChange={(e) => setAnonymous(e.target.checked)}
-              className="mt-0.5 w-4 h-4 accent-emerald-800"
-            />
-            <span>
-              <span className="block font-medium text-stone-900">
-                Post anonymously
-              </span>
-              <span className="block text-sm text-stone-600">
-                Your name won&apos;t be shown on this post.
-              </span>
-            </span>
-          </label>
+              makes immigration, legal and money questions askable.
+
+              A Toggle rather than a checkbox: on iOS a checkbox steals
+              focus from the body field and Safari drops the keyboard. */}
+          <Toggle
+            checked={anonymous}
+            onChangeAction={setAnonymous}
+            label="Post anonymously"
+            description="Your name won't be shown on this post."
+          />
         </div>
 
         <button
           onClick={submit}
           disabled={!valid || saving}
-          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
+          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white disabled:opacity-40"
         >
           {saving ? "Posting…" : "Post"}
         </button>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { createAnswer, RateLimitError } from "@/lib/queries/posts";
+import { Toggle } from "@/components/ui/toggle";
 
 /**
  * SPEC 5.3 — pinned to the bottom, always visible. Answering is the
@@ -57,7 +58,7 @@ export function AnswerComposer({
 
   if (userId && isBanned) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
         <p className="text-center text-sm text-stone-600">
           Your account is suspended, so you can&apos;t answer right now. You
           can still read everything.
@@ -68,10 +69,10 @@ export function AnswerComposer({
 
   if (!userId) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
         <Link
           href={`/signup?next=${encodeURIComponent(`/posts/${postId}`)}`}
-          className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+          className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
         >
           Sign in to answer
         </Link>
@@ -80,7 +81,7 @@ export function AnswerComposer({
   }
 
   return (
-    <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+    <div className="sticky bottom-0 border-t border-stone-200 bg-white px-4 py-3">
       {error && (
         <p role="alert" className="mb-2 text-sm text-red-700">
           {error}
@@ -98,20 +99,19 @@ export function AnswerComposer({
       />
 
       <div className="mt-2 flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={anonymous}
-            onChange={(e) => setAnonymous(e.target.checked)}
-            className="w-4 h-4 accent-emerald-800"
-          />
-          Anonymously
-        </label>
+        {/* Sits directly under the open textarea — the worst possible
+            place for a control that dismisses the keyboard. */}
+        <Toggle
+          compact
+          checked={anonymous}
+          onChangeAction={setAnonymous}
+          label="Anonymously"
+        />
 
         <button
           onClick={submit}
           disabled={!body.trim() || saving}
-          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-stone-0 disabled:opacity-40"
+          className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-white disabled:opacity-40"
         >
           {saving ? "Posting…" : "Answer"}
         </button>

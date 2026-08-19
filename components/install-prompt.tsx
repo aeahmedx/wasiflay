@@ -18,12 +18,21 @@ const DISMISS_DAYS = 90;
 export function InstallPrompt() {
   const { installed, canPromptNative, isIOSSafari, promptInstall } =
     useInstall();
-  const [dismissed, setDismissed] = useState(true); // assume until checked
+  /**
+   * Read once at init rather than in an effect — setState inside an
+   * effect forces a second render before paint.
+   *
+   * No hydration risk: the server has no cookie and renders true, and
+   * the first client render still returns null because `mode` is "none"
+   * until a browser event or the iOS timer says otherwise. Both passes
+   * produce nothing.
+   */
+  const [dismissed, setDismissed] = useState(() =>
+    typeof document === "undefined"
+      ? true
+      : document.cookie.includes("wl_install_dismissed=1")
+  );
   const [iosReady, setIosReady] = useState(false);
-
-  useEffect(() => {
-    setDismissed(document.cookie.includes("wl_install_dismissed=1"));
-  }, []);
 
   // Give people a moment with whatever they came for first.
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createReport, type ReportTarget } from "@/lib/queries/moderation";
+import { RadioOption } from "@/components/ui/toggle";
 
 const REASONS = [
   "Harassment or abuse",
@@ -78,27 +79,24 @@ export function ReportButton({
       </button>
 
       {open && (
-        <div className="mt-2 rounded-lg border border-stone-300 bg-stone-0 p-3">
+        <div className="mt-2 rounded-lg border border-stone-300 bg-white p-3">
           <p className="text-sm font-medium text-stone-800 mb-2">
             What&apos;s wrong with this?
           </p>
 
-          <div className="space-y-1.5">
+          {/* Radios above an open detail box: picking one with a plain
+              input would drop the keyboard mid-sentence. */}
+          <div role="radiogroup" aria-label="Reason" className="space-y-0.5">
             {REASONS.map((r) => (
-              <label
+              <RadioOption
                 key={r}
-                className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer"
+                name={`reason-${targetId}`}
+                value={r}
+                selected={reason === r}
+                onSelectAction={setReason}
               >
-                <input
-                  type="radio"
-                  name={`reason-${targetId}`}
-                  value={r}
-                  checked={reason === r}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-3.5 h-3.5 accent-emerald-800"
-                />
                 {r}
-              </label>
+              </RadioOption>
             ))}
           </div>
 
@@ -123,7 +121,7 @@ export function ReportButton({
               type="button"
               onClick={submit}
               disabled={!reason || state === "sending"}
-              className="rounded-lg bg-stone-900 px-3.5 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
+              className="rounded-lg bg-stone-900 px-3.5 py-2 text-sm font-medium text-white disabled:opacity-40"
             >
               {state === "sending" ? "Sending…" : "Send report"}
             </button>
