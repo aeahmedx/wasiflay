@@ -1,112 +1,88 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useInstall } from "@/lib/hooks/use-install";
+import { IOSInstallSteps } from "@/components/ios-install-steps";
 
-type InstallEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+const DISMISS_DAYS = 90;
 
 /**
- * Prompts people to add Wasif Lay to their home screen.
+ * The automatic, once-per-quarter ask.
  *
- * Android and desktop Chrome fire beforeinstallprompt and we can trigger
- * the real installer. iOS Safari has no such API, so it gets written
- * instructions instead — which is fine, because the main use is pointing
- * at someone's phone at a booth and walking them through it.
+ * Sits over the tab bar deliberately: it has to be acknowledged rather
+ * than scrolled past, and it's dismissed in one tap.
  *
- * Dismissal is remembered in a cookie rather than localStorage, which is
- * not available in this environment.
+ * Anyone who says "not now" and changes their mind can find it again on
+ * their profile — see AddToHomeScreen.
  */
 export function InstallPrompt() {
-  const [deferred, setDeferred] = useState<InstallEvent | null>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const { installed, canPromptNative, isIOSSafari, promptInstall } =
+    useInstall();
+  const [dismissed, setDismissed] = useState(true); // assume until checked
+  const [iosReady, setIosReady] = useState(false);
 
   useEffect(() => {
-    // Already installed — nothing to offer.
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS reports it here instead
-      (window.navigator as unknown as { standalone?: boolean }).standalone ===
-        true;
-    if (standalone) return;
-
-    if (document.cookie.includes("wl_install_dismissed=1")) return;
-
-    const ua = window.navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
-    setIsIOS(ios);
-
-    function onPrompt(e: Event) {
-      e.preventDefault();
-      setDeferred(e as InstallEvent);
-      setVisible(true);
-    }
-
-    window.addEventListener("beforeinstallprompt", onPrompt);
-
-    // iOS never fires the event, so show the instructions after a beat —
-    // long enough that it doesn't interrupt the first thing they came for.
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    if (ios) timer = setTimeout(() => setVisible(true), 8000);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      if (timer) clearTimeout(timer);
-    };
+    setDismissed(document.cookie.includes("wl_install_dismissed=1"));
   }, []);
 
+  // Give people a moment with whatever they came for first.
+  useEffect(() => {
+    if (!isIOSSafari) return;
+    const timer = setTimeout(() => setIosReady(true), 10000);
+    return () => clearTimeout(timer);
+  }, [isIOSSafari]);
+
   function dismiss() {
-    // 30 days
-    document.cookie = `wl_install_dismissed=1; path=/; max-age=${60 * 60 * 24 * 30}`;
-    setVisible(false);
+    document.cookie = `wl_install_dismissed=1; path=/; max-age=${
+      60 * 60 * 24 * DISMISS_DAYS
+    }`;
+    setDismissed(true);
   }
 
-  async function install() {
-    if (!deferred) return;
-    await deferred.prompt();
-    await deferred.userChoice;
-    setVisible(false);
-  }
+  if (installed || dismissed) return null;
 
-  if (!visible) return null;
+  const showIOS = isIOSSafari && iosReady;
+  if (!showIOS && !canPromptNative) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-40 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3 shadow-lg">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-stone-900">Add to your home screen</p>
-          {isIOS ? (
-            <p className="mt-0.5 text-sm text-stone-600">
-              Tap Share, then <span className="font-medium">Add to Home
-              Screen</span>.
+    <div className="fixed inset-x-3 bottom-3 z-40 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 shadow-lg">
+      {showIOS ? (
+        <>
+          <p className="font-medium text-stone-900">Keep Wasif Lay handy</p>
+          <IOSInstallSteps />
+          <button
+            onClick={dismiss}
+            className="mt-3 rounded-lg border border-stone-300 px-3.5 py-2 text-sm text-stone-700"
+          >
+            Got it
+          </button>
+        </>
+      ) : (
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-stone-900">
+              Add to your home screen
             </p>
-          ) : (
             <p className="mt-0.5 text-sm text-stone-600">
-              Opens like an app, no store needed.
+              Opens like an app. No store, no download.
             </p>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {!isIOS && (
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <button
-              onClick={install}
+              onClick={promptInstall}
               className="rounded-lg bg-emerald-800 px-3.5 py-2 text-sm font-medium text-stone-0"
             >
               Add
             </button>
-          )}
-          <button
-            onClick={dismiss}
-            aria-label="Dismiss"
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-600"
-          >
-            Not now
-          </button>
+            <button
+              onClick={dismiss}
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-600"
+            >
+              Not now
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
