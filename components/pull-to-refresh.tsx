@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { announceIfOffline } from "@/lib/offline";
 
 const TRIGGER_PX = 72; // how far you must pull
 const MAX_PX = 110; // how far the indicator travels
@@ -102,6 +103,10 @@ function scrollableAncestor(node: EventTarget | null): HTMLElement | null {
 
       setPull((current) => {
         if (current >= TRIGGER_PX) {
+          // Offline, the refresh would spin and change nothing, which
+          // reads as the gesture being broken. Say so instead.
+          if (announceIfOffline()) return 0;
+
           busy.current = true;
           setRefreshing(true);
           router.refresh();

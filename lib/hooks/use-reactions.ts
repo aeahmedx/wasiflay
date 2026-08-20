@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { announceIfOffline } from "@/lib/offline";
 import {
   addReaction,
   buildReactionMap,
@@ -106,6 +107,10 @@ export function useReactions(roomId: string, userId: string | null) {
   const toggle = useCallback(
     async (messageId: string, emoji: Emoji) => {
       if (!userId) return;
+
+      // Same reasoning as the helpful button: an optimistic pill that
+      // appears and vanishes reads as a bug.
+      if (announceIfOffline()) return;
 
       const existing = rowsRef.current.find(
         (r) =>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { addVote, removeVote, type VoteTarget } from "@/lib/queries/posts";
+import { announceIfOffline } from "@/lib/offline";
 
 /**
  * SPEC 5.2 — helpful votes are optimistic toggles. The displayed count is
@@ -28,6 +29,11 @@ export function HelpfulButton({
 
   async function toggle() {
     if (!canVote || busy) return;
+
+    // Offline the write fails and the count rolls back — the number
+    // flips and unflips, which looks like a glitch rather than a
+    // missing connection.
+    if (announceIfOffline()) return;
 
     const nextVoted = !voted;
     setVoted(nextVoted);
