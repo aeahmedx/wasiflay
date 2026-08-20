@@ -2,16 +2,17 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { profileExists } from "@/lib/queries/profiles";
+import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { getUnreadCount } from "@/lib/queries/notifications";
-import { InstallPrompt } from "@/components/install-prompt";
+import { TERMS_VERSION } from "@/lib/legal";
 import { TabBar } from "@/components/tab-bar";
 import { PullToRefresh } from "@/components/pull-to-refresh";
+import { InstallPrompt } from "@/components/install-prompt";
 import { TermsGate } from "@/components/terms-gate";
 import { ReadOnlyBanner } from "@/components/read-only-banner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SessionWatch } from "@/components/session-watch";
-import { getCurrentProfile } from "@/lib/queries/profiles.server";
-import { TERMS_VERSION } from "@/lib/legal";
+import { ConnectionStatus } from "@/components/connection-status";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -47,24 +48,29 @@ export default async function MainLayout({
 
   return (
     <>
-      {/* Installed as a PWA there's no browser chrome, so the reflex of
-          swiping down to refresh would otherwise do nothing. */}
+      {/* A slim bar rather than a full-page takeover — losing signal
+          mid-session shouldn't blank out content that's still readable.
+          The service worker covers the cold-start case, where there
+          genuinely is nothing to show. */}
+      <ConnectionStatus />
+
       <PullToRefresh />
       <ReadOnlyBanner />
+
       {children}
+
       <TabBar userId={user?.id ?? null} initialUnread={unread} />
-      {/* Rendered last so it sits above everything, including the tab
-          bar. The legal pages themselves stay reachable underneath —
-          being asked to accept terms you can't open would be absurd. */}
+
+      <InstallPrompt />
+      <ServiceWorkerRegister />
+      <SessionWatch hadSession={Boolean(user)} />
+
+      {/* Last, so it sits above everything including the tab bar. The
+          legal pages stay reachable underneath — being asked to accept
+          terms you can't open would be absurd. */}
       {needsTerms && profile && (
         <TermsGate userId={profile.id} isMinor={profile.is_minor} />
       )}
-      {/* Not on signup or onboarding — interrupting someone mid-signup to
-          ask them to install is the wrong moment. */}
-      <InstallPrompt />
-      <ServiceWorkerRegister />
-      {/* Only watches when there was a session to lose. */}
-      <SessionWatch hadSession={Boolean(user)} />
     </>
   );
 }

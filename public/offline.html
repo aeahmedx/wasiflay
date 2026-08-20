@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offline · Wasif Lay</title>
+<!--
+  Deliberately self-contained: every style is inline and there is not a
+  single external reference.
+
+  The previous version was a Next.js page, and the service worker cached
+  its HTML but not the separately-hashed CSS — so with no network it came
+  back completely unstyled. A fallback page that can itself fail to load
+  is worse than no fallback at all.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: #fbf8f2;
+    color: #1a140c;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card { max-width: 320px; width: 100%; text-align: center; }
+  .mark {
+    width: 56px; height: 56px; margin: 0 auto 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: #f5a623; border-radius: 14px;
+  }
+  h1 { margin: 0 0 8px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  p  { margin: 0; font-size: 15px; line-height: 1.5; color: #5e5242; }
+  button {
+    margin-top: 24px; width: 100%;
+    padding: 13px 16px; border: 0; border-radius: 10px;
+    background: #46300c; color: #fff;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #202124; color: #f9f4e8; }
+    p { color: #c4b696; }
+    button { background: #f5a623; color: #202124; }
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 64 64">
+        <g transform="translate(32 32) rotate(12) scale(0.9) translate(-32 -32)"
+           fill="none" stroke="#2b1d07" stroke-width="3.6" stroke-linejoin="round">
+          <path d="M29.5 8 h5 v48 h-5 z"/>
+          <path d="M34.5 15 h16 l6 5.5 -6 5.5 h-16 z"/>
+          <path d="M29.5 27 h-15 l-6 5.5 6 5.5 h15 z"/>
+          <path d="M34.5 34 h13 l6 5.5 -6 5.5 h-13 z"/>
+        </g>
+      </svg>
+    </div>
+
+    <h1>No connection</h1>
+    <p>Signal at big events is often patchy. It usually comes back on its own.</p>
+
+    <button onclick="location.reload()">Try again</button>
+  </div>
+
+  <script>
+    // Reload the moment the connection returns, so nobody sits looking
+    // at this after it's already fixed itself.
+    addEventListener("online", function () { location.reload(); });
+  </script>
+</body>
+</html>
