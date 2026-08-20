@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 /**
  * A checkbox that doesn't dismiss the keyboard.
  *
@@ -35,7 +37,7 @@ export function Toggle({
   const box = (
     <span
       aria-hidden
-      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border transition ${
+      className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border transition ${
         checked
           ? "border-emerald-800 bg-emerald-800"
           : "border-stone-400 bg-stone-0"
@@ -106,7 +108,7 @@ export function RadioOption({
   value: string;
   selected: boolean;
   onSelectAction: (value: string) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button
@@ -120,12 +122,12 @@ export function RadioOption({
     >
       <span
         aria-hidden
-        className={`flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full border ${
+        className={`flex h-3.75 w-3.75 shrink-0 items-center justify-center rounded-full border ${
           selected ? "border-emerald-800" : "border-stone-400"
         }`}
       >
         {selected && (
-          <span className="h-[7px] w-[7px] rounded-full bg-emerald-800" />
+          <span className="h-1.75 w-1.75 rounded-full bg-emerald-800" />
         )}
       </span>
       <span id={`${name}-${value}`}>{children}</span>

@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,7 +27,7 @@ type Tab = {
   href: string;
   label: string;
   match: (path: string) => boolean;
-  icon: (active: boolean) => React.ReactNode;
+  icon: (active: boolean) => ReactNode;
 };
 
 const stroke = (active: boolean) => (active ? 2.1 : 1.6);

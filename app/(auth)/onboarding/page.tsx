@@ -250,7 +250,7 @@ export default function OnboardingPage() {
         <button
           onClick={submit}
           disabled={!valid || saving}
-          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
+          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
         >
           {saving ? "Saving…" : "Continue"}
         </button>

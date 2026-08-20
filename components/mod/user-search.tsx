@@ -10,6 +10,7 @@ import {
   modSetBan,
   purgeUser,
   type ModUser,
+  type UserRole,
 } from "@/lib/queries/moderation";
 
 const DEBOUNCE_MS = 300;
@@ -127,7 +128,7 @@ export function UserSearch({
         type="search"
         placeholder="Search by name or town"
         aria-label="Search users"
-        className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
+        className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-2.5 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
       />
 
       {/* Sits under a live search field; a plain checkbox would close
@@ -153,7 +154,7 @@ export function UserSearch({
       {loading ? (
         <p className="mt-4 text-stone-500">Loading…</p>
       ) : users.length === 0 ? (
-        <p className="mt-4 rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-stone-600">
+        <p className="mt-4 rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
           No accounts match that.
         </p>
       ) : (
@@ -161,7 +162,7 @@ export function UserSearch({
           {users.map((u) => (
             <li
               key={u.id}
-              className="rounded-lg border border-stone-200 bg-white px-4 py-3.5"
+              className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-3.5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -203,6 +204,16 @@ export function UserSearch({
                   userId={u.id}
                   currentRole={u.role}
                   viewerId={viewerId}
+                  onChangedAction={(role: UserRole) => {
+                    // Optimistic: the row re-renders with the new badge
+                    // and the correct ban rules straight away.
+                    setUsers((current) =>
+                      current.map((x) =>
+                        x.id === u.id ? { ...x, role } : x
+                      )
+                    );
+                    void load(query, bannedOnly);
+                  }}
                 />
               )}
 
@@ -241,7 +252,7 @@ export function UserSearch({
                     <button
                       onClick={() => purge(u)}
                       disabled={busy === u.id}
-                      className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                      className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
                     >
                       Confirm: remove everything
                     </button>

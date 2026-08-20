@@ -14,10 +14,17 @@ export function RoleControl({
   userId,
   currentRole,
   viewerId,
+  onChangedAction,
 }: {
   userId: string;
   currentRole: UserRole;
   viewerId: string;
+  /**
+   * The user list is client state loaded once — router.refresh() only
+   * re-runs server components, so without this the badge and the ban
+   * button stayed stale until a full reload.
+   */
+  onChangedAction: (role: UserRole) => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -45,6 +52,9 @@ export function RoleControl({
         return;
       }
       setConfirmAdmin(false);
+      // Update the list first so the badge and the ban button react
+      // immediately, then refresh the server-rendered pieces.
+      onChangedAction(role);
       router.refresh();
     } finally {
       setBusy(false);

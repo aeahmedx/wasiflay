@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { profileExists } from "@/lib/queries/profiles";
@@ -22,7 +23,7 @@ import { TERMS_VERSION } from "@/lib/legal";
 export default async function MainLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const supabase = await createClient();
   const {
