@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Toggle } from "@/components/ui/toggle";
+import { RoleControl } from "@/components/mod/role-control";
 import {
   findUsers,
   modSetBan,
@@ -196,6 +197,14 @@ export function UserSearch({
                   )}
                 </div>
               </div>
+
+              {isAdmin && (
+                <RoleControl
+                  userId={u.id}
+                  currentRole={u.role}
+                  viewerId={viewerId}
+                />
+              )}
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link

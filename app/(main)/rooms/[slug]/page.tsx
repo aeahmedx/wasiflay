@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRecentMessages, getRoomBySlug } from "@/lib/queries/messages";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
+import { blockedIds } from "@/lib/queries/safety";
 import { RoomView } from "@/components/rooms/room-view";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -22,6 +23,8 @@ export default async function RoomPage({
     getCurrentProfile(),
   ]);
 
+  const blocked = auth.user ? await blockedIds(supabase, auth.user.id) : [];
+
   return (
     <ErrorBoundary label="Chat">
       <RoomView
@@ -31,6 +34,7 @@ export default async function RoomPage({
         isStaff={profile?.role === "moderator" || profile?.role === "admin"}
         isAdmin={profile?.role === "admin"}
         isBanned={profile?.is_banned ?? false}
+        blockedIds={blocked}
       />
     </ErrorBoundary>
   );

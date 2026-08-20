@@ -77,10 +77,9 @@ export async function getRecentMessages(
   roomId: string
 ): Promise<Message[]> {
   const { data, error } = await client
-    .from("messages")
+    .from("public_messages")
     .select(MESSAGE_FIELDS)
     .eq("room_id", roomId)
-    .eq("is_removed", false)
     .order("created_at", { ascending: false })
     .limit(MESSAGE_PAGE_SIZE);
 
@@ -95,10 +94,9 @@ export async function getMessagesSince(
   sinceIso: string
 ): Promise<Message[]> {
   const { data, error } = await client
-    .from("messages")
+    .from("public_messages")
     .select(MESSAGE_FIELDS)
     .eq("room_id", roomId)
-    .eq("is_removed", false)
     .gt("created_at", sinceIso)
     .order("created_at", { ascending: true })
     .limit(MESSAGE_PAGE_SIZE);

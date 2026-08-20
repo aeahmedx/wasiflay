@@ -12,6 +12,9 @@ import { getRegions, regionName } from "@/lib/queries/regions";
 import { relativeTime } from "@/components/posts/post-card";
 import { SignOutButton } from "@/app/(main)/sign-out-button";
 import { AddToHomeScreen } from "@/components/add-to-home-screen";
+import { BlockButton } from "@/components/block-button";
+import { AccountSettings } from "@/components/account-settings";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
 import { ViewTabs } from "@/components/view-tabs";
 
@@ -35,6 +38,10 @@ export default async function ProfilePage({
   const supabase = await createClient();
   const profile = await getPublicProfile(supabase, id);
   if (!profile) notFound();
+
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
 
   const [regions, posts, answers] = await Promise.all([
     getRegions(supabase),
@@ -74,13 +81,23 @@ export default async function ProfilePage({
               )}
             </div>
 
-            {profile.is_self && (
+            {profile.is_self ? (
               <Link
                 href="/profile/edit"
                 className="shrink-0 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700"
               >
                 Edit
               </Link>
+            ) : (
+              viewer && (
+                <div className="shrink-0">
+                  <BlockButton
+                    viewerId={viewer.id}
+                    targetId={profile.id}
+                    targetName={profile.display_name}
+                  />
+                </div>
+              )
             )}
           </div>
 
@@ -193,7 +210,11 @@ export default async function ProfilePage({
             <p className="mt-6 text-xs leading-relaxed text-stone-500">
               Anonymous posts and answers never appear on your profile.
             </p>
-            <div className="mt-6 flex flex-col items-center gap-3 border-t border-stone-200 pt-5">
+            <div className="mt-6 border-t border-stone-200 pt-5">
+              <AccountSettings userId={profile.id} />
+            </div>
+
+            <div className="mt-5 flex flex-col items-center gap-3 border-t border-stone-200 pt-5">
               <Link
                 href="/support"
                 className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"

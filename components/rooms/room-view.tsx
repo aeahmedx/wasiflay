@@ -43,6 +43,7 @@ export function RoomView({
   isStaff = false,
   isAdmin = false,
   isBanned = false,
+  blockedIds = [],
 }: {
   room: Room;
   initialMessages: Message[];
@@ -50,11 +51,13 @@ export function RoomView({
   isStaff?: boolean;
   isAdmin?: boolean;
   isBanned?: boolean;
+  blockedIds?: string[];
 }) {
   const supabase = useMemo(() => createClient(), []);
   const { messages, authors, connection, mergeMessages } = useRoomMessages(
     room.id,
-    initialMessages
+    initialMessages,
+    blockedIds
   );
   const presence = usePresenceCount(room.id, userId);
   const { reactions, toggle } = useReactions(room.id, userId);
@@ -185,7 +188,7 @@ export function RoomView({
 
   return (
     <div className="flex flex-col h-dvh bg-stone-50">
-      <header className="flex items-center justify-between border-b border-stone-200 bg-stone-0 px-4 py-3">
+      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <BackLink fallback="/rooms" label="←" className="text-lg text-stone-600 leading-none" />
           <div className="min-w-0">
@@ -260,7 +263,7 @@ export function RoomView({
                     <button
                       onClick={() => void saveEdit(m.id)}
                       disabled={!editDraft.trim() || savingEdit}
-                      className="rounded-lg bg-emerald-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
+                      className="rounded-lg bg-emerald-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
                     >
                       {savingEdit ? "Saving…" : "Save"}
                     </button>
@@ -342,7 +345,7 @@ export function RoomView({
         </p>
       )}
 
-      <div className="border-t border-stone-200 bg-stone-0 px-3 py-3">
+      <div className="border-t border-stone-200 bg-white px-3 py-3">
         {isBanned ? (
           <p className="text-center text-sm text-stone-600">
             Your account is suspended, so you can&apos;t post right now. You
@@ -386,7 +389,7 @@ export function RoomView({
             <button
               onClick={() => void send()}
               disabled={!draft.trim() || overLimit}
-              className="rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0 disabled:opacity-40"
+              className="rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white disabled:opacity-40"
             >
               Send
             </button>
@@ -394,7 +397,7 @@ export function RoomView({
         ) : (
           <Link
             href={`/signup?next=${encodeURIComponent(`/rooms/${room.slug}`)}`}
-            className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+            className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
           >
             Sign in to join the conversation
           </Link>

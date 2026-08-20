@@ -4,6 +4,9 @@ import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { ReportQueue } from "@/components/mod/report-queue";
 import { UserSearch } from "@/components/mod/user-search";
 import { RemovedContent } from "@/components/mod/removed-content";
+import { KillSwitch } from "@/components/mod/kill-switch";
+import { getSiteSettings } from "@/lib/queries/safety";
+import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -18,6 +21,9 @@ export default async function ModPage({
   // notFound rather than redirect: don't confirm the route exists to
   // someone who isn't staff.
   if (!profile || profile.role === "member") notFound();
+
+  const supabase = await createClient();
+  const settings = await getSiteSettings(supabase);
 
   const onUsers = view === "users";
   const onRemoved = view === "removed";
@@ -59,6 +65,15 @@ export default async function ModPage({
             <ReportQueue isAdmin={isAdmin} viewerId={profile.id} />
           )}
         </ErrorBoundary>
+
+        {isAdmin && (
+          <div className="mt-8 border-t border-stone-200 pt-6">
+            <KillSwitch
+              initialReadOnly={settings.read_only}
+              initialNotice={settings.notice}
+            />
+          </div>
+        )}
       </div>
     </main>
   );

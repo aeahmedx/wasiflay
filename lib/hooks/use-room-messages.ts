@@ -24,8 +24,16 @@ export type PendingMessage = {
   failed: boolean;
 };
 
-export function useRoomMessages(roomId: string, initial: Message[]) {
+export function useRoomMessages(
+  roomId: string,
+  initial: Message[],
+  blockedIds: string[] = []
+) {
   const supabase = useMemo(() => createClient(), []);
+  // Realtime events arrive straight from the table, bypassing the
+  // public_messages view — so blocking has to be applied here too, or a
+  // blocked person's messages reappear live and vanish on refresh.
+  const blocked = useMemo(() => new Set(blockedIds), [blockedIds]);
 
   const [messages, setMessages] = useState<Message[]>(initial);
   const [authors, setAuthors] = useState<Record<string, Author>>({});
@@ -146,7 +154,7 @@ export function useRoomMessages(roomId: string, initial: Message[]) {
           },
           (payload) => {
             const row = payload.new as Message;
-            if (!row.id) return;
+            if (!row.id || blocked.has(row.author_id)) return;
             mergeMessages([row]);
           }
         )
@@ -207,7 +215,7 @@ export function useRoomMessages(roomId: string, initial: Message[]) {
       if (subscribeTimer) clearTimeout(subscribeTimer);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [roomId, supabase, mergeMessages]);
+  }, [roomId, supabase, mergeMessages, blocked]);
 
   return { messages, authors, connection, mergeMessages };
 }

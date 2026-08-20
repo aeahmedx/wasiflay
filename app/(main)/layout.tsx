@@ -6,6 +6,7 @@ import { InstallPrompt } from "@/components/install-prompt";
 import { TabBar } from "@/components/tab-bar";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { TermsGate } from "@/components/terms-gate";
+import { ReadOnlyBanner } from "@/components/read-only-banner";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { TERMS_VERSION } from "@/lib/legal";
 
@@ -46,6 +47,7 @@ export default async function MainLayout({
       {/* Installed as a PWA there's no browser chrome, so the reflex of
           swiping down to refresh would otherwise do nothing. */}
       <PullToRefresh />
+      <ReadOnlyBanner />
       {children}
       <TabBar userId={user?.id ?? null} initialUnread={unread} />
       {/* Rendered last so it sits above everything, including the tab
