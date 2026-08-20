@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
-
 import type { ReactNode } from "react";
 import "./globals.css";
+import { SplashScreen } from "@/components/splash-screen";
 
 const SITE = "https://www.wasiflay.com";
 
@@ -47,18 +47,17 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F5A623" },
-    { media: "(prefers-color-scheme: dark)", color: "#191410" },
+    { media: "(prefers-color-scheme: dark)", color: "#202124" },
   ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <SplashScreen />
+        {children}
+      </body>
     </html>
   );
 }

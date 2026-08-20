@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries/posts";
 import { PostFeed } from "@/components/posts/post-feed";
 import { EventList } from "@/components/events/event-list";
+import { Wordmark } from "@/components/wordmark";
 import { getUpcomingEvents } from "@/lib/queries/events";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
@@ -75,8 +76,8 @@ export default async function HomePage({
     <main className="min-h-dvh bg-stone-50 pb-24">
       <div className="max-w-md mx-auto px-4 pt-6">
         <div className="flex items-baseline justify-between mb-5">
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-            Wasif Lay
+          <h1>
+            <Wordmark size="sm" />
           </h1>
           <span className="flex items-center gap-4">
             {profile ? (
