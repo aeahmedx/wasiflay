@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createProfile } from "@/lib/queries/profiles";
 import { getRegions, type Region } from "@/lib/queries/regions";
 import { safeNext } from "@/lib/safe-next";
+import { MINIMUM_AGE } from "@/lib/legal";
 
 const FLAGS = [
   { code: "SD", label: "Sudan" },
@@ -68,15 +69,15 @@ export default function OnboardingPage() {
   }, [router]);
 
   const age = dob ? yearsSince(dob) : NaN;
-  const tooYoung = !Number.isNaN(age) && age < 13;
-  const isMinor = !Number.isNaN(age) && age >= 13 && age < 18;
+  const tooYoung = !Number.isNaN(age) && age < MINIMUM_AGE;
+  const isMinor = !Number.isNaN(age) && age >= MINIMUM_AGE && age < 18;
 
   const valid =
     displayName.trim().length >= 2 &&
     displayName.trim().length <= 50 &&
     region.length > 0 &&
     !Number.isNaN(age) &&
-    age >= 13 &&
+    age >= MINIMUM_AGE &&
     age < 120;
 
   async function submit() {
@@ -235,7 +236,7 @@ export default function OnboardingPage() {
             />
             {tooYoung && (
               <p className="mt-2 text-sm text-red-700">
-                You need to be 13 or older to use Wasif Lay.
+                You need to be {MINIMUM_AGE} or older to use Wasif Lay.
               </p>
             )}
             {isMinor && (
@@ -249,7 +250,7 @@ export default function OnboardingPage() {
         <button
           onClick={submit}
           disabled={!valid || saving}
-          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
+          className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-white transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
         >
           {saving ? "Saving…" : "Continue"}
         </button>

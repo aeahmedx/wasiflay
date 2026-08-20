@@ -194,6 +194,12 @@ export default async function ProfilePage({
               Anonymous posts and answers never appear on your profile.
             </p>
             <div className="mt-6 flex flex-col items-center gap-3 border-t border-stone-200 pt-5">
+              <Link
+                href="/support"
+                className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"
+              >
+                Support
+              </Link>
               {/* Renders nothing when already installed or when the
                   browser can't install, so it never offers a dead end. */}
               <AddToHomeScreen />
@@ -201,6 +207,26 @@ export default async function ProfilePage({
             </div>
           </>
         )}
+        <div className="mt-8 flex justify-center gap-4 border-t border-stone-200 pt-5 text-xs">
+          <Link
+            href="/terms"
+            className="text-stone-500 underline underline-offset-4"
+          >
+            Terms
+          </Link>
+          <Link
+            href="/privacy"
+            className="text-stone-500 underline underline-offset-4"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/guidelines"
+            className="text-stone-500 underline underline-offset-4"
+          >
+            Guidelines
+          </Link>
+        </div>
       </div>
     </main>
   );

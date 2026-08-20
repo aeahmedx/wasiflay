@@ -19,6 +19,9 @@ export type PublicProfile = {
   is_self: boolean;
   is_banned: boolean;  // own status only; always false for other people
   sms_opt_in: boolean; // own status only
+  is_minor: boolean;   // own status only
+  terms_version: string | null;
+  terms_accepted_at: string | null;
 };
 
 /**
