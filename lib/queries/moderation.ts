@@ -1,11 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ReportTarget =
-  | "post"
-  | "answer"
-  | "message"
-  | "listing"
-  | "profile";
+    | "post"
+    | "answer"
+    | "message"
+    | "listing"
+    | "profile"
+    // Added to the database enum in 0026; the union has to match or the
+    // report button can't target an event.
+    | "event";
 
 export type ReportStatus = "open" | "actioned" | "dismissed";
 
@@ -51,13 +54,13 @@ export type ModUser = {
 // ---- reporting (any signed-in user) ---------------------------------
 
 export async function createReport(
-  client: SupabaseClient,
-  input: {
-    reporter_id: string;
-    target_type: ReportTarget;
-    target_id: string;
-    reason: string;
-  }
+    client: SupabaseClient,
+    input: {
+      reporter_id: string;
+      target_type: ReportTarget;
+      target_id: string;
+      reason: string;
+    }
 ): Promise<void> {
   const { error } = await client.from("reports").insert(input);
   if (error) throw error;
@@ -66,8 +69,8 @@ export async function createReport(
 // ---- queue -----------------------------------------------------------
 
 export async function getReportQueue(
-  client: SupabaseClient,
-  status: ReportStatus = "open"
+    client: SupabaseClient,
+    status: ReportStatus = "open"
 ): Promise<QueueItem[]> {
   const { data, error } = await client.rpc("mod_report_queue", {
     p_status: status,
@@ -78,7 +81,7 @@ export async function getReportQueue(
 }
 
 export async function getOpenReportCount(
-  client: SupabaseClient
+    client: SupabaseClient
 ): Promise<number> {
   const { data, error } = await client.rpc("mod_open_report_count");
   if (error) return 0;
@@ -87,9 +90,9 @@ export async function getOpenReportCount(
 
 /** Returns false when someone else already holds a live claim. */
 export async function claimTarget(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string
 ): Promise<boolean> {
   const { data, error } = await client.rpc("mod_claim_target", {
     p_target: target,
@@ -100,9 +103,9 @@ export async function claimTarget(
 }
 
 export async function releaseTarget(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string
 ): Promise<void> {
   const { error } = await client.rpc("mod_release_target", {
     p_target: target,
@@ -113,10 +116,10 @@ export async function releaseTarget(
 
 /** Resolves every open report against one target. */
 export async function resolveTarget(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string,
-  status: ReportStatus
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string,
+    status: ReportStatus
 ): Promise<number> {
   const { data, error } = await client.rpc("mod_resolve_target", {
     p_target: target,
@@ -130,9 +133,9 @@ export async function resolveTarget(
 // ---- actions ---------------------------------------------------------
 
 export async function modRemove(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string
 ): Promise<void> {
   const { error } = await client.rpc("mod_remove", {
     p_target: target,
@@ -142,9 +145,9 @@ export async function modRemove(
 }
 
 export async function modRestore(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string
 ): Promise<void> {
   const { error } = await client.rpc("mod_restore", {
     p_target: target,
@@ -154,9 +157,9 @@ export async function modRestore(
 }
 
 export async function modSetBan(
-  client: SupabaseClient,
-  userId: string,
-  banned: boolean
+    client: SupabaseClient,
+    userId: string,
+    banned: boolean
 ): Promise<void> {
   const { error } = await client.rpc("mod_set_ban", {
     p_user: userId,
@@ -168,9 +171,9 @@ export async function modSetBan(
 // ---- people ----------------------------------------------------------
 
 export async function findUsers(
-  client: SupabaseClient,
-  query: string,
-  bannedOnly = false
+    client: SupabaseClient,
+    query: string,
+    bannedOnly = false
 ): Promise<ModUser[]> {
   const { data, error } = await client.rpc("mod_find_users", {
     p_query: query,
@@ -182,8 +185,8 @@ export async function findUsers(
 }
 
 export async function purgeUser(
-  client: SupabaseClient,
-  userId: string
+    client: SupabaseClient,
+    userId: string
 ): Promise<number> {
   const { data, error } = await client.rpc("mod_purge_user", {
     p_user: userId,
@@ -199,9 +202,9 @@ export async function purgeUser(
  * Returns the number of top-level rows removed.
  */
 export async function adminHardDelete(
-  client: SupabaseClient,
-  target: ReportTarget,
-  id: string
+    client: SupabaseClient,
+    target: ReportTarget,
+    id: string
 ): Promise<number> {
   const { data, error } = await client.rpc("admin_hard_delete", {
     p_target: target,

@@ -5,6 +5,8 @@ import { ReportQueue } from "@/components/mod/report-queue";
 import { UserSearch } from "@/components/mod/user-search";
 import { RemovedContent } from "@/components/mod/removed-content";
 import { KillSwitch } from "@/components/mod/kill-switch";
+import { EventReview } from "@/components/mod/event-review";
+import { getPendingEventCount } from "@/lib/queries/events";
 import { getSiteSettings } from "@/lib/queries/safety";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
@@ -25,8 +27,11 @@ export default async function ModPage({
   const supabase = await createClient();
   const settings = await getSiteSettings(supabase);
 
+  const pendingEvents = await getPendingEventCount(supabase);
+
   const onUsers = view === "users";
   const onRemoved = view === "removed";
+  const onEvents = view === "events";
   const isAdmin = profile.role === "admin";
 
   return (
@@ -43,7 +48,15 @@ export default async function ModPage({
 
         <div className="mb-5">
           <ViewTabs
-            activeKey={onUsers ? "users" : onRemoved ? "removed" : "reports"}
+            activeKey={
+              onUsers
+                ? "users"
+                : onRemoved
+                ? "removed"
+                : onEvents
+                ? "events"
+                : "reports"
+            }
             tabs={[
               { key: "reports", label: "Reports", href: "/mod" },
               { key: "users", label: "People", href: "/mod?view=users" },
@@ -52,6 +65,12 @@ export default async function ModPage({
                 label: "Removed",
                 href: "/mod?view=removed",
               },
+              {
+                key: "events",
+                label:
+                  pendingEvents > 0 ? `Events (${pendingEvents})` : "Events",
+                href: "/mod?view=events",
+              },
             ]}
           />
         </div>
@@ -59,6 +78,8 @@ export default async function ModPage({
         <ErrorBoundary label="The moderation panel">
           {onUsers ? (
             <UserSearch isAdmin={isAdmin} viewerId={profile.id} />
+          ) : onEvents ? (
+            <EventReview />
           ) : onRemoved ? (
             <RemovedContent isAdmin={isAdmin} />
           ) : (

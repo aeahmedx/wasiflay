@@ -10,6 +10,8 @@ import {
   getUnansweredPosts,
 } from "@/lib/queries/posts";
 import { PostFeed } from "@/components/posts/post-feed";
+import { EventList } from "@/components/events/event-list";
+import { getUpcomingEvents } from "@/lib/queries/events";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
 import { getOpenReportCount } from "@/lib/queries/moderation";
@@ -28,6 +30,8 @@ export default async function HomePage({
       ? "trending"
       : params.tab === "needs"
       ? "needs"
+      : params.tab === "events"
+      ? "events"
       : "latest";
 
   const supabase = await createClient();
@@ -45,8 +49,13 @@ export default async function HomePage({
       ? null
       : params.region ?? profile?.region ?? null;
 
+  const events =
+    tab === "events" ? await getUpcomingEvents(supabase, region) : [];
+
   const [posts, unanswered] = await Promise.all([
-    tab === "trending"
+    tab === "events"
+      ? Promise.resolve([])
+      : tab === "trending"
       ? getTrendingPosts(supabase, region)
       : tab === "needs"
       ? getUnansweredPosts(supabase, region)
@@ -110,7 +119,7 @@ export default async function HomePage({
           What do you need?
         </Link>
 
-        <div className="mb-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <ViewTabs
             activeKey={tab}
             tabs={[
@@ -137,6 +146,19 @@ export default async function HomePage({
               },
             ]}
           />
+
+          {/* Pushed to the right on purpose: events aren't another way
+              of sorting posts, they're a different thing entirely. */}
+          <Link
+            href={`/?tab=events${regionQuery}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] transition ${
+              tab === "events"
+                ? "bg-stone-900 text-stone-0"
+                : "text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            Events
+          </Link>
         </div>
 
         {/* Own row: three tabs and a region name competing for one line
@@ -146,7 +168,13 @@ export default async function HomePage({
           <RegionPicker regions={regions} current={region} tab={tab} />
         </div>
 
-        {posts.length === 0 ? (
+        {tab === "events" ? (
+          <EventList
+            events={events}
+            regions={regions}
+            signedIn={Boolean(profile)}
+          />
+        ) : posts.length === 0 ? (
           <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center">
             {/* An empty needs-queue is good news, so "nothing here yet"
                 would be exactly the wrong message. */}

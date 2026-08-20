@@ -28,6 +28,7 @@ export type Post = {
   is_anonymous: boolean;
   answer_count: number;
   helpful_count: number;
+  event_id: string | null;
   created_at: string;
 };
 
@@ -42,7 +43,7 @@ export type Answer = {
 };
 
 const POST_FIELDS =
-  "id, author_id, type, title, body, city, region, is_anonymous, answer_count, helpful_count, created_at";
+  "id, author_id, type, title, body, city, region, is_anonymous, answer_count, helpful_count, event_id, created_at";
 const ANSWER_FIELDS =
   "id, post_id, author_id, body, is_anonymous, helpful_count, created_at";
 
@@ -156,6 +157,7 @@ export async function createPost(
     city: string | null;
     region: string | null;
     is_anonymous: boolean;
+    event_id?: string | null;
   }
 ): Promise<{ id: string }> {
   // Only `id` is read back. Migration 0004 revoked SELECT on author_id for
