@@ -133,6 +133,34 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* =====================================================================
+   Touch behaviour
+
+   touch-action: manipulation removes the browser's wait-and-see for a
+   double tap. Two effects, both of which matter on a phone at an event:
+   taps register immediately instead of ~300ms later, and tapping a
+   button twice in frustration retries instead of zooming the page.
+
+   Applied to controls rather than globally, so pinch-to-zoom on photos
+   still works — that one is a genuine accessibility need.
+   ===================================================================== */
+button,
+a,
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Stops the whole page rubber-banding behind a scrolling list, which on
+   iOS makes a fixed tab bar look like it's detaching. */
+body {
+  overscroll-behavior-y: none;
+}
+
 /* Headings sit tighter than Tailwind's default — the wordmark is
    condensed and heavy, and loose headings read as a different brand. */
 h1, h2, h3 {

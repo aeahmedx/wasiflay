@@ -17,8 +17,8 @@ export type ConnectionState = "connecting" | "live" | "polling";
 /** How long to wait for the socket before giving up and polling. */
 const SUBSCRIBE_TIMEOUT_MS = 8000;
 const POLL_INTERVAL_MS = 5000;
-/** Occasionally retry realtime while polling, in case the network recovers. */
-const REALTIME_RETRY_MS = 60000;
+/** Retry realtime while polling, in case the network recovers. */
+const REALTIME_RETRY_MS = 20000;
 
 export type PendingMessage = {
   tempId: string;
@@ -214,7 +214,20 @@ export function useRoomMessages(
 
     connect();
 
+    // The browser knows the moment signal returns — waiting out the
+    // retry timer means a room sits on polling for up to 20 seconds
+    // after it could have been live again.
+    function onOnline() {
+      if (cancelled) return;
+      stopPolling();
+      if (channel) void supabase.removeChannel(channel);
+      channel = null;
+      connect();
+    }
+    window.addEventListener("online", onOnline);
+
     return () => {
+      window.removeEventListener("online", onOnline);
       cancelled = true;
       stopPolling();
       if (subscribeTimer) clearTimeout(subscribeTimer);

@@ -26,7 +26,14 @@ import {
   type Room,
 } from "@/lib/queries/messages";
 
-type Pending = { tempId: string; body: string; failed: boolean };
+type Pending = {
+  tempId: string;
+  body: string;
+  failed: boolean;
+  /** False when the server rejected it on its merits — rate limit,
+   *  content rule — so retrying would only fail again. */
+  resendable: boolean;
+};
 
 const MAX_LENGTH = 1000;
 
@@ -69,6 +76,10 @@ export function RoomView({
 
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<Pending[]>([]);
+  // The online listener is registered once, so it reads through a ref
+  // rather than closing over a stale array.
+  const pendingRef = useRef<Pending[]>([]);
+  pendingRef.current = pending;
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -115,7 +126,7 @@ export function RoomView({
     if (!body || !userId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
-    setPending((c) => [...c, { tempId, body, failed: false }]);
+    setPending((c) => [...c, { tempId, body, failed: false, resendable: true }]);
     setNotice(null);
 
     try {
@@ -133,8 +144,16 @@ export function RoomView({
       setDraft("");
     } catch (e) {
       // Keep the text. Losing what someone typed is worse than any error.
+      const rejected =
+        e instanceof RateLimitError ||
+        contentErrorMessage(e instanceof Error ? e.message : "") !== null;
+
       setPending((c) =>
-        c.map((p) => (p.tempId === tempId ? { ...p, failed: true } : p))
+        c.map((p) =>
+          p.tempId === tempId
+            ? { ...p, failed: true, resendable: !rejected }
+            : p
+        )
       );
       const raw = e instanceof Error ? e.message : "";
       setNotice(
@@ -199,6 +218,50 @@ export function RoomView({
       setNotice("Couldn't save that edit.");
     } finally {
       setSavingEdit(false);
+    }
+  }
+
+  /**
+   * A message that failed because the signal dropped shouldn't need a
+   * tap to recover. When the connection returns, anything still marked
+   * failed is sent again on its own — the text was already typed, and
+   * asking someone to retype or re-tap is how you lose them.
+   *
+   * Rate-limit and content rejections are left alone: those failed for
+   * a reason and resending would just fail again.
+   */
+  useEffect(() => {
+    function onOnline() {
+      const stuck = pendingRef.current.filter((p) => p.failed && p.resendable);
+      if (stuck.length === 0) return;
+      stuck.forEach((p) => void resend(p.tempId));
+    }
+
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function resend(tempId: string) {
+    const item = pendingRef.current.find((p) => p.tempId === tempId);
+    if (!item || !userId) return;
+
+    setPending((c) =>
+      c.map((p) => (p.tempId === tempId ? { ...p, failed: false } : p))
+    );
+
+    try {
+      const sent = await sendMessage(supabase, {
+        room_id: room.id,
+        author_id: userId,
+        body: item.body,
+      });
+      mergeMessages([sent]);
+      setPending((c) => c.filter((p) => p.tempId !== tempId));
+    } catch {
+      setPending((c) =>
+        c.map((p) => (p.tempId === tempId ? { ...p, failed: true } : p))
+      );
     }
   }
 
@@ -348,7 +411,11 @@ export function RoomView({
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium text-emerald-800">You</span>
               <span className="text-xs text-stone-400">
-                {p.failed ? "Not sent" : "Sending…"}
+                {p.failed
+                ? p.resendable
+                  ? "Waiting for signal"
+                  : "Not sent"
+                : "Sending…"}
               </span>
             </div>
             <p
@@ -361,10 +428,12 @@ export function RoomView({
             </p>
             {p.failed && (
               <button
-                onClick={() => retry(p.tempId)}
+                onClick={() =>
+                  p.resendable ? void resend(p.tempId) : retry(p.tempId)
+                }
                 className="self-start text-xs text-emerald-800 underline underline-offset-2"
               >
-                Retry
+                {p.resendable ? "Send now" : "Edit and try again"}
               </button>
             )}
           </div>

@@ -5,25 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Offline · Wasif Lay</title>
 <!--
-  Deliberately self-contained: every style is inline and there is not a
-  single external reference.
+  Self-contained: every style inline, no external reference. Caching a
+  framework page's HTML without its hashed CSS is what made the previous
+  version render unstyled.
 
-  The previous version was a Next.js page, and the service worker cached
-  its HTML but not the separately-hashed CSS — so with no network it came
-  back completely unstyled. A fallback page that can itself fail to load
-  is worse than no fallback at all.
+  It also isn't a dead end. It checks for itself whether the connection
+  is back and leaves on its own, and it offers a way back to what you
+  were reading rather than one button in the middle of an empty screen.
 -->
 <style>
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
   body {
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-    background: #fbf8f2;
-    color: #1a140c;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    background: #fbf8f2; color: #1a140c;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* Kills the double-tap-to-zoom delay: tapping a button twice in
+       frustration was zooming the page instead of retrying. */
+    touch-action: manipulation;
   }
   .card { max-width: 320px; width: 100%; text-align: center; }
   .mark {
@@ -33,17 +34,28 @@
   }
   h1 { margin: 0 0 8px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
   p  { margin: 0; font-size: 15px; line-height: 1.5; color: #5e5242; }
-  button {
-    margin-top: 24px; width: 100%;
-    padding: 13px 16px; border: 0; border-radius: 10px;
-    background: #46300c; color: #fff;
-    font-size: 15px; font-weight: 600; font-family: inherit;
-    cursor: pointer;
+  .status {
+    margin-top: 18px; font-size: 13px; color: #7c6d59;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #a2937d;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+  .actions { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+  button {
+    width: 100%; padding: 13px 16px; border: 0; border-radius: 10px;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .primary { background: #46300c; color: #fff; }
+  .ghost { background: transparent; color: #5e5242; border: 1px solid #d2c3aa; }
   @media (prefers-color-scheme: dark) {
     body { background: #202124; color: #f9f4e8; }
-    p { color: #c4b696; }
-    button { background: #f5a623; color: #202124; }
+    p, .status { color: #c4b696; }
+    .primary { background: #f5a623; color: #202124; }
+    .ghost { color: #c4b696; border-color: #5f6368; }
   }
 </style>
 </head>
@@ -62,15 +74,50 @@
     </div>
 
     <h1>No connection</h1>
-    <p>Signal at big events is often patchy. It usually comes back on its own.</p>
+    <p>Signal at big events gets crowded. This page leaves by itself the moment it's back.</p>
 
-    <button onclick="location.reload()">Try again</button>
+    <div class="status"><span class="dot"></span><span id="status">Checking…</span></div>
+
+    <div class="actions">
+      <button class="primary" onclick="check(true)">Try now</button>
+      <button class="ghost" onclick="goBack()">Back to what I was reading</button>
+    </div>
   </div>
 
-  <script>
-    // Reload the moment the connection returns, so nobody sits looking
-    // at this after it's already fixed itself.
-    addEventListener("online", function () { location.reload(); });
-  </script>
+<script>
+  var tries = 0;
+
+  function goBack() {
+    // Whatever they were reading is still in the back/forward cache, so
+    // this returns to real content rather than another network attempt.
+    if (history.length > 1) history.back();
+    else location.href = "/";
+  }
+
+  function check(manual) {
+    var el = document.getElementById("status");
+    if (manual) el.textContent = "Checking…";
+
+    // A real request, not navigator.onLine — a phone on a saturated
+    // tower reports itself as online while nothing actually loads.
+    fetch("/manifest.webmanifest", { method: "HEAD", cache: "no-store" })
+      .then(function () { location.reload(); })
+      .catch(function () {
+        tries++;
+        el.textContent = manual ? "Still nothing. Keeping an eye on it." : "Waiting for signal…";
+      });
+  }
+
+  // Checks itself, so nobody sits tapping a button. Backs off from 3s to
+  // 30s so it doesn't drain the battery of someone stuck in a dead spot.
+  function loop() {
+    check(false);
+    var wait = Math.min(3000 * Math.pow(1.6, tries), 30000);
+    setTimeout(loop, wait);
+  }
+
+  addEventListener("online", function () { check(false); });
+  setTimeout(loop, 1500);
+</script>
 </body>
 </html>
