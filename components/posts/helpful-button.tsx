@@ -6,9 +6,9 @@ import { addVote, removeVote, type VoteTarget } from "@/lib/queries/posts";
 import { announceIfOffline } from "@/lib/offline";
 
 /**
- * SPEC 5.2 — helpful votes are optimistic toggles. The displayed count is
- * local state seeded from the server value; the DB trigger owns the real
- * number and it reconciles on the next page load.
+ * SPEC 5.2 — helpful votes are optimistic toggles. The displayed count
+ * is local state seeded from the server value; the database trigger owns
+ * the real number, and it reconciles on the next page load.
  */
 export function HelpfulButton({
   target,
@@ -30,14 +30,19 @@ export function HelpfulButton({
   async function toggle() {
     if (!canVote || busy) return;
 
-    // Offline the write fails and the count rolls back — the number
-    // flips and unflips, which looks like a glitch rather than a
-    // missing connection.
+    // Offline the write fails and the count rolls back. The number flips
+    // and unflips, which looks like a glitch rather than a missing
+    // connection, so nothing moves and the banner explains instead.
     if (announceIfOffline()) return;
 
     const nextVoted = !voted;
-    setVoted(nextVoted);
-    setCount((c) => c + (nextVoted ? 1 : -1));
+
+    const apply = (on: boolean) => {
+      setVoted(on);
+      setCount((c) => c + (on ? 1 : -1));
+    };
+
+    apply(nextVoted);
     setBusy(true);
 
     try {
@@ -45,7 +50,13 @@ export function HelpfulButton({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("no session");
+
+      // Checked rather than thrown: throwing here only to catch it two
+      // lines below is a round trip that says nothing extra.
+      if (!user) {
+        apply(!nextVoted);
+        return;
+      }
 
       if (nextVoted) {
         await addVote(supabase, user.id, target, targetId);
@@ -54,8 +65,7 @@ export function HelpfulButton({
       }
     } catch {
       // Roll back rather than showing a wrong count.
-      setVoted(!nextVoted);
-      setCount((c) => c + (nextVoted ? -1 : 1));
+      apply(!nextVoted);
     } finally {
       setBusy(false);
     }
