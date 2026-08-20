@@ -9,7 +9,7 @@ import {
   getUnansweredCount,
   getUnansweredPosts,
 } from "@/lib/queries/posts";
-import { PostCard } from "@/components/posts/post-card";
+import { PostFeed } from "@/components/posts/post-feed";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
 import { getOpenReportCount } from "@/lib/queries/moderation";
@@ -96,7 +96,7 @@ export default async function HomePage({
         {/* SPEC 3.1 — search is the centrepiece. */}
         <Link
           href="/search"
-          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-500 mb-5"
+          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-500 mb-5"
         >
           <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" aria-hidden>
             <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
@@ -147,7 +147,7 @@ export default async function HomePage({
         </div>
 
         {posts.length === 0 ? (
-          <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
+          <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center">
             {/* An empty needs-queue is good news, so "nothing here yet"
                 would be exactly the wrong message. */}
             {tab === "needs" ? (
@@ -157,7 +157,7 @@ export default async function HomePage({
                 </p>
                 <Link
                   href={`/?tab=latest${regionQuery}`}
-                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
                 >
                   Back to the feed
                 </Link>
@@ -171,7 +171,7 @@ export default async function HomePage({
                 </p>
                 <Link
                   href="/create"
-                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
                 >
                   Ask the first question
                 </Link>
@@ -179,28 +179,13 @@ export default async function HomePage({
             )}
           </div>
         ) : (
-          <>
-            {tab === "needs" && (
-              <p className="mb-3 text-sm text-stone-600">
-                Nobody has answered these yet. If you know, say so.
-              </p>
-            )}
-            <ul className="space-y-2">
-            {posts.map((post) => (
-              <li key={post.id}>
-                <PostCard
-                  post={post}
-                  author={post.author_id ? authors[post.author_id] : undefined}
-                  regionLabel={
-                    post.region
-                      ? regionName(regions, post.region)
-                      : "All regions"
-                  }
-                />
-              </li>
-            ))}
-            </ul>
-          </>
+          <PostFeed
+            initialPosts={posts}
+            initialAuthors={authors}
+            regions={regions}
+            region={region}
+            tab={tab}
+          />
         )}
       </div>
 

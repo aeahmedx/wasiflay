@@ -12,6 +12,8 @@ import {
 import { safeNext } from "@/lib/safe-next";
 import { BackLink } from "@/components/back-link";
 import { Toggle } from "@/components/ui/toggle";
+import { ContentNotice } from "@/components/content-notice";
+import { checkContent, contentErrorMessage } from "@/lib/content-safety";
 import type { Region } from "@/lib/queries/regions";
 
 const TITLE_PLACEHOLDER: Record<PostType, string> = {
@@ -53,7 +55,11 @@ export function CreatePostForm({
   const [error, setError] = useState<string | null>(null);
 
   const trimmedTitle = title.trim();
-  const valid = trimmedTitle.length >= 5 && trimmedTitle.length <= 200;
+  const combined = `${title} ${body}`;
+  // Blocked outright — nothing else here stops a post.
+  const blocked = checkContent(combined).hasCardNumber;
+  const valid =
+    trimmedTitle.length >= 5 && trimmedTitle.length <= 200 && !blocked;
 
   async function submit() {
     if (!valid || saving) return;
@@ -74,10 +80,12 @@ export function CreatePostForm({
       router.replace(safeNext(`/posts/${created.id}`));
       router.refresh();
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
       setError(
         e instanceof RateLimitError
           ? "You're posting quickly. Wait a moment and try again."
-          : "Couldn't post. Check your connection and try again."
+          : contentErrorMessage(raw) ??
+            (raw ? `Couldn't post: ${raw}` : "Couldn't post. Check your connection and try again.")
       );
       setSaving(false);
     }
@@ -202,6 +210,8 @@ export function CreatePostForm({
 
               A Toggle rather than a checkbox: on iOS a checkbox steals
               focus from the body field and Safari drops the keyboard. */}
+          <ContentNotice text={combined} />
+
           <Toggle
             checked={anonymous}
             onChangeAction={setAnonymous}

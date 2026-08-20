@@ -61,13 +61,19 @@ function isRateLimit(error: { message?: string } | null): boolean {
 export async function getLatestPosts(
   client: SupabaseClient,
   region: string | null,
-  limit = 30
+  limit = 30,
+  /** created_at of the last post you already have. Cursor rather than
+   *  offset: posts arriving while someone reads would shift an offset
+   *  window and duplicate or skip rows. */
+  before?: string
 ): Promise<Post[]> {
   let query = client
     .from("public_posts")
     .select(POST_FIELDS)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (before) query = query.lt("created_at", before);
 
   // A null-region post belongs to every feed.
   if (region) query = query.or(`region.eq.${region},region.is.null`);
@@ -314,7 +320,8 @@ export async function updateAnswer(
 export async function getUnansweredPosts(
   client: SupabaseClient,
   region: string | null,
-  limit = 30
+  limit = 30,
+  before?: string
 ): Promise<Post[]> {
   let query = client
     .from("public_posts")
@@ -323,6 +330,8 @@ export async function getUnansweredPosts(
     .eq("answer_count", 0)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (before) query = query.lt("created_at", before);
 
   // A region-less post belongs to every feed.
   if (region) query = query.or(`region.eq.${region},region.is.null`);

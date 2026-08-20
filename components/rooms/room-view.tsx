@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useRoomMessages } from "@/lib/hooks/use-room-messages";
 import { usePresenceCount } from "@/lib/hooks/use-presence";
+import { contentErrorMessage } from "@/lib/content-safety";
 import {
   RateLimitError,
   sendMessage,
@@ -54,11 +55,15 @@ export function RoomView({
   blockedIds?: string[];
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const { messages, authors, connection, mergeMessages } = useRoomMessages(
-    room.id,
-    initialMessages,
-    blockedIds
-  );
+  const {
+    messages,
+    authors,
+    connection,
+    mergeMessages,
+    loadOlder,
+    loadingOlder,
+    hasOlder,
+  } = useRoomMessages(room.id, initialMessages, blockedIds);
   const presence = usePresenceCount(room.id, userId);
   const { reactions, toggle } = useReactions(room.id, userId);
 
@@ -87,6 +92,24 @@ export function RoomView({
       el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   }
 
+  /**
+   * Prepending history moves everything down, so the reader would end up
+   * looking at a different part of the conversation. Measuring the
+   * scroll height before and after and adding the difference keeps the
+   * message they were reading exactly where it was.
+   */
+  async function showEarlier() {
+    const el = scrollRef.current;
+    const before = el?.scrollHeight ?? 0;
+
+    const added = await loadOlder();
+    if (added === 0 || !el) return;
+
+    requestAnimationFrame(() => {
+      el.scrollTop += el.scrollHeight - before;
+    });
+  }
+
   async function send() {
     const body = draft.trim();
     if (!body || !userId) return;
@@ -113,10 +136,11 @@ export function RoomView({
       setPending((c) =>
         c.map((p) => (p.tempId === tempId ? { ...p, failed: true } : p))
       );
+      const raw = e instanceof Error ? e.message : "";
       setNotice(
         e instanceof RateLimitError
           ? "Slow down a second."
-          : "Message didn't send. Tap to retry."
+          : contentErrorMessage(raw) ?? "Message didn't send. Tap to retry."
       );
     }
   }
@@ -151,7 +175,8 @@ export function RoomView({
           ? "Couldn't read that image."
           : e instanceof RateLimitError
           ? "Slow down a second."
-          : "Photo didn't send. Check your connection."
+          : contentErrorMessage(e instanceof Error ? e.message : "") ??
+            "Photo didn't send. Check your connection."
       );
     } finally {
       setUploading(false);
@@ -188,7 +213,7 @@ export function RoomView({
 
   return (
     <div className="flex flex-col h-dvh bg-stone-50">
-      <header className="flex items-center justify-between border-b border-stone-200 bg-stone-0 px-4 py-3">
+      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <BackLink fallback="/rooms" label="←" className="text-lg text-stone-600 leading-none" />
           <div className="min-w-0">
@@ -210,6 +235,16 @@ export function RoomView({
         onScroll={onScroll}
         className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
       >
+        {hasOlder && messages.length > 0 && (
+          <button
+            onClick={showEarlier}
+            disabled={loadingOlder}
+            className="mx-auto mb-2 block rounded-full border border-stone-300 bg-stone-0 px-4 py-1.5 text-sm text-stone-600 disabled:opacity-40"
+          >
+            {loadingOlder ? "Loading…" : "Load earlier messages"}
+          </button>
+        )}
+
         {messages.length === 0 && pending.length === 0 && (
           <p className="text-stone-500 text-center py-12">
             Nothing here yet. Say something.
@@ -263,7 +298,7 @@ export function RoomView({
                     <button
                       onClick={() => void saveEdit(m.id)}
                       disabled={!editDraft.trim() || savingEdit}
-                      className="rounded-lg bg-emerald-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
+                      className="rounded-lg bg-emerald-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
                     >
                       {savingEdit ? "Saving…" : "Save"}
                     </button>
@@ -345,7 +380,7 @@ export function RoomView({
         </p>
       )}
 
-      <div className="border-t border-stone-200 bg-stone-0 px-3 py-3">
+      <div className="border-t border-stone-200 bg-white px-3 py-3">
         {isBanned ? (
           <p className="text-center text-sm text-stone-600">
             Your account is suspended, so you can&apos;t post right now. You
@@ -389,7 +424,7 @@ export function RoomView({
             <button
               onClick={() => void send()}
               disabled={!draft.trim() || overLimit}
-              className="rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0 disabled:opacity-40"
+              className="rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white disabled:opacity-40"
             >
               Send
             </button>
@@ -397,7 +432,7 @@ export function RoomView({
         ) : (
           <Link
             href={`/signup?next=${encodeURIComponent(`/rooms/${room.slug}`)}`}
-            className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
+            className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
           >
             Sign in to join the conversation
           </Link>

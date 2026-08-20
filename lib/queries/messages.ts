@@ -87,6 +87,25 @@ export async function getRecentMessages(
   return ((data ?? []) as Message[]).reverse();
 }
 
+/** Earlier messages, for scrolling back through a room's history. */
+export async function getOlderMessages(
+  client: SupabaseClient,
+  roomId: string,
+  beforeIso: string
+): Promise<Message[]> {
+  const { data, error } = await client
+    .from("public_messages")
+    .select(MESSAGE_FIELDS)
+    .eq("room_id", roomId)
+    .lt("created_at", beforeIso)
+    .order("created_at", { ascending: false })
+    .limit(MESSAGE_PAGE_SIZE);
+
+  if (error) throw error;
+  // Reversed so callers can prepend without re-sorting.
+  return ((data ?? []) as Message[]).reverse();
+}
+
 /** Polling fallback: anything newer than the last message we hold. */
 export async function getMessagesSince(
   client: SupabaseClient,

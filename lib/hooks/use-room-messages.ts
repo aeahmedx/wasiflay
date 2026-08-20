@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   getAuthors,
   getMessagesSince,
+  getOlderMessages,
+  MESSAGE_PAGE_SIZE,
   type Author,
   type Message,
 } from "@/lib/queries/messages";
@@ -36,6 +38,9 @@ export function useRoomMessages(
   const blocked = useMemo(() => new Set(blockedIds), [blockedIds]);
 
   const [messages, setMessages] = useState<Message[]>(initial);
+  // A short first page means there's no history behind it.
+  const [exhausted, setExhausted] = useState(initial.length < MESSAGE_PAGE_SIZE);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [authors, setAuthors] = useState<Record<string, Author>>({});
   const [connection, setConnection] = useState<ConnectionState>("connecting");
 
@@ -217,5 +222,49 @@ export function useRoomMessages(
     };
   }, [roomId, supabase, mergeMessages, blocked]);
 
-  return { messages, authors, connection, mergeMessages };
+  /**
+   * Older history, prepended. Returns the number added so the caller can
+   * restore scroll position — prepending without that jumps the reader
+   * to a random point in the conversation.
+   */
+  const loadOlder = useCallback(async (): Promise<number> => {
+    const current = messagesRef.current;
+    if (loadingOlder || exhausted || current.length === 0) return 0;
+
+    setLoadingOlder(true);
+    try {
+      const older = await getOlderMessages(
+        supabase,
+        roomId,
+        current[0].created_at
+      );
+
+      if (older.length < MESSAGE_PAGE_SIZE) setExhausted(true);
+      if (older.length === 0) return 0;
+
+      const visible = older.filter((m) => !blocked.has(m.author_id));
+
+      setMessages((existing) => {
+        const seen = new Set(existing.map((m) => m.id));
+        return [...visible.filter((m) => !seen.has(m.id)), ...existing];
+      });
+
+      void ensureAuthors(visible);
+      return visible.length;
+    } catch {
+      return 0;
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [supabase, roomId, loadingOlder, exhausted, blocked, ensureAuthors]);
+
+  return {
+    messages,
+    authors,
+    connection,
+    mergeMessages,
+    loadOlder,
+    loadingOlder,
+    hasOlder: !exhausted,
+  };
 }

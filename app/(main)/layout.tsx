@@ -8,6 +8,8 @@ import { TabBar } from "@/components/tab-bar";
 import { PullToRefresh } from "@/components/pull-to-refresh";
 import { TermsGate } from "@/components/terms-gate";
 import { ReadOnlyBanner } from "@/components/read-only-banner";
+import { ServiceWorkerRegister } from "@/components/sw-register";
+import { SessionWatch } from "@/components/session-watch";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { TERMS_VERSION } from "@/lib/legal";
 
@@ -60,6 +62,9 @@ export default async function MainLayout({
       {/* Not on signup or onboarding — interrupting someone mid-signup to
           ask them to install is the wrong moment. */}
       <InstallPrompt />
+      <ServiceWorkerRegister />
+      {/* Only watches when there was a session to lose. */}
+      <SessionWatch hadSession={Boolean(user)} />
     </>
   );
 }

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { createAnswer, RateLimitError } from "@/lib/queries/posts";
 import { Toggle } from "@/components/ui/toggle";
+import { ContentNotice } from "@/components/content-notice";
+import { checkContent, contentErrorMessage } from "@/lib/content-safety";
 
 /**
  * SPEC 5.3 — pinned to the bottom, always visible. Answering is the
@@ -27,9 +29,11 @@ export function AnswerComposer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const blocked = checkContent(body).hasCardNumber;
+
   async function submit() {
     const trimmed = body.trim();
-    if (!trimmed || !userId || saving) return;
+    if (!trimmed || !userId || saving || blocked) return;
 
     setSaving(true);
     setError(null);
@@ -46,10 +50,12 @@ export function AnswerComposer({
       setAnonymous(false);
       router.refresh();
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
       setError(
         e instanceof RateLimitError
           ? "Slow down a second."
-          : "Couldn't post your answer. Try again."
+          : contentErrorMessage(raw) ??
+            (raw ? `Couldn't post: ${raw}` : "Couldn't post your answer. Try again.")
       );
     } finally {
       setSaving(false);
@@ -98,6 +104,12 @@ export function AnswerComposer({
         className="w-full resize-none rounded-lg border border-stone-300 px-3.5 py-2.5 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
       />
 
+      {body.trim().length > 0 && (
+        <div className="mt-2">
+          <ContentNotice text={body} />
+        </div>
+      )}
+
       <div className="mt-2 flex items-center justify-between">
         {/* Sits directly under the open textarea — the worst possible
             place for a control that dismisses the keyboard. */}
@@ -110,7 +122,7 @@ export function AnswerComposer({
 
         <button
           onClick={submit}
-          disabled={!body.trim() || saving}
+          disabled={!body.trim() || saving || blocked}
           className="rounded-lg bg-emerald-800 px-4 py-2 font-medium text-stone-0 disabled:opacity-40"
         >
           {saving ? "Posting…" : "Answer"}
