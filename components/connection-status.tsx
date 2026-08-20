@@ -25,20 +25,15 @@ const TOAST_MS = 2200;
 /**
  * How losing signal should feel: like nothing much happened.
  *
- * The problem this solves is specific. Next falls back to a full page
- * load when a client navigation can't fetch its data — which hits the
- * service worker and replaces the whole app with the offline page. One
- * tap and everything already loaded is gone, with nothing but a Try
- * again button left.
+ * Navigation is deliberately NOT blocked. The service worker keeps
+ * pages you've already opened, so moving around what you've seen works
+ * offline — blocking taps would make the app feel more broken than the
+ * connection actually is.
  *
- * So while offline, forward navigation simply doesn't start. The feed
- * you already have stays on screen and stays scrollable, a quiet line
- * says why, and the moment signal returns the tap works again. Back and
- * forward still work, because those come from the browser's cache
- * rather than the network.
- *
- * This is what every social app does. Nothing pauses, nothing is lost,
- * and there is no screen to get stuck on.
+ * What's left here is honesty: a line at the top saying why things are
+ * slow, and a quiet pill for the actions that genuinely can't work —
+ * voting, reacting, refreshing — which would otherwise fail silently or
+ * flicker and undo themselves.
  */
 export function ConnectionStatus() {
   const router = useRouter();
@@ -70,40 +65,6 @@ export function ConnectionStatus() {
     return () => window.removeEventListener(NEEDS_CONNECTION, onNeeds);
   }, [showToast]);
 
-  // Stop forward navigations before they can turn into a failed page
-  // load. Capture phase, so it runs before Next's router picks the
-  // click up.
-  useEffect(() => {
-    if (online) return;
-
-    function onClick(e: MouseEvent) {
-      if (e.defaultPrevented || e.button !== 0) return;
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-      const link = (e.target as HTMLElement | null)?.closest("a");
-      if (!link) return;
-
-      const href = link.getAttribute("href");
-      if (!href) return;
-
-      // Leave alone: other sites, downloads, new tabs, in-page anchors,
-      // and anything that isn't a normal navigation.
-      if (link.target === "_blank" || link.hasAttribute("download")) return;
-      if (!href.startsWith("/") || href.startsWith("//")) return;
-      if (href.startsWith("#")) return;
-
-      // Already here — nothing to fetch, so let it be.
-      if (href === window.location.pathname + window.location.search) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-      showToast();
-    }
-
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
-  }, [online, showToast]);
-
   useEffect(() => {
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -134,7 +95,7 @@ export function ConnectionStatus() {
           className="fixed inset-x-0 top-0 z-50 bg-stone-800 px-4 py-2 text-center text-sm font-medium text-stone-0"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
         >
-          No connection — you can still read what&apos;s loaded
+          No connection — pages you&apos;ve opened still work
         </div>
       )}
 

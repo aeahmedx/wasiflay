@@ -12,6 +12,17 @@ export function SignOutButton() {
     setBusy(true);
     const supabase = createClient();
     await supabase.auth.signOut();
+
+    /**
+     * Pages are cached for offline use, and they're rendered for a
+     * specific person — a feed, a profile, a moderation queue. Without
+     * clearing them, the next person to use this phone could be served
+     * the previous one's screens straight from cache.
+     */
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.controller?.postMessage("wl:clear-cache");
+    }
+
     router.replace("/signup");
     router.refresh();
   }
