@@ -30,7 +30,13 @@
  */
 const sw = /** @type {never} */ (globalThis);
 
-const VERSION = "v4";
+/**
+ * Bump this on any deploy that changes assets. Everything not matching
+ * the new cache names is deleted on activate, which is the escape hatch
+ * if a cache ever goes bad — no need to ask anyone to clear their
+ * browser.
+ */
+const VERSION = "v5";
 const PAGES = `wl-pages-${VERSION}`;
 const ASSETS = `wl-assets-${VERSION}`;
 
@@ -90,10 +96,18 @@ function offlineResponse() {
   });
 }
 
-/** @param {URL} url */
+/**
+ * @param {URL} url
+ *
+ * /_next/image is the one that bit us: next/image doesn't request
+ * /logo-full.png, it requests /_next/image?url=%2Flogo-full.png&w=... —
+ * no file extension, so an extension test misses it entirely and every
+ * image broke offline.
+ */
 function isImmutableAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/_next/image") ||
     /\.(?:png|jpe?g|svg|ico|woff2?|json)$/.test(url.pathname) ||
     url.pathname.endsWith(".webmanifest")
   );
@@ -135,8 +149,9 @@ sw.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== sw.location.origin) return;
 
-  // Content-hashed build output: cache forever. Without these, a cached
-  // page renders unstyled.
+  // Build output and images. Without these a cached page renders
+  // unstyled with broken images, which looks far worse than a page that
+  // simply didn't load.
   if (isImmutableAsset(url)) {
     event.respondWith(
       caches.match(request).then(
