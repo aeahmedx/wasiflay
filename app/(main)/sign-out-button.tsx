@@ -23,6 +23,11 @@ export function SignOutButton() {
       navigator.serviceWorker.controller?.postMessage("wl:clear-cache");
     }
 
+    // Browsing preferences are per-person, not per-device. Phones get
+    // shared in this community; the next person shouldn't land in
+    // someone else's region.
+    document.cookie = "wl_region=; path=/; max-age=0";
+
     router.replace("/signup");
     router.refresh();
   }

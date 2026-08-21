@@ -167,6 +167,26 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+/* =====================================================================
+   Brand artwork in dark mode
+
+   The logo files are black line art on transparent. On a dark surface
+   that's invisible, so it's inverted to white.
+
+   Done here rather than with a dark: utility because this has to be
+   certain: a utility that silently doesn't apply leaves the logo
+   invisible, and nobody notices until someone opens the app at night.
+   ===================================================================== */
+.brand-art {
+  transition: filter 120ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .brand-art {
+    filter: invert(1);
+  }
+}
+
 /* Arabic sits alongside English throughout. */
 [dir="rtl"],
 [dir="auto"] {

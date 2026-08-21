@@ -12,6 +12,7 @@ import {
 import { PostFeed } from "@/components/posts/post-feed";
 import { EventList } from "@/components/events/event-list";
 import { Wordmark } from "@/components/wordmark";
+import { cookies } from "next/headers";
 import { getUpcomingEvents } from "@/lib/queries/events";
 import { RegionPicker } from "@/components/region-picker";
 import { ViewTabs } from "@/components/view-tabs";
@@ -26,6 +27,13 @@ export default async function HomePage({
   searchParams: Promise<Search>;
 }) {
   const params = await searchParams;
+
+  // Region survives moving between pages. The picker writes a cookie so
+  // the choice isn't lost the moment someone opens a post and comes
+  // back — an explicit ?region= in the URL still wins, so a shared link
+  // still points where it says.
+  const jar = await cookies();
+  const savedRegion = jar.get("wl_region")?.value ?? null;
   const tab =
     params.tab === "trending"
       ? "trending"
@@ -45,10 +53,9 @@ export default async function HomePage({
   const openReports = isStaff ? await getOpenReportCount(supabase) : 0;
 
   // No ?region= means "my region". An explicit ?region=all means everything.
-  const region =
-    params.region === "all"
-      ? null
-      : params.region ?? profile?.region ?? null;
+  const chosenRegion =
+    params.region ?? savedRegion ?? profile?.region ?? null;
+  const region = chosenRegion === "all" ? null : chosenRegion;
 
   const events =
     tab === "events" ? await getUpcomingEvents(supabase, region) : [];
@@ -66,18 +73,14 @@ export default async function HomePage({
   const authors = await getAuthorsFor(supabase, posts);
 
   // Carry the current region choice across tab switches, including "all".
-  const regionQuery = params.region
-    ? `&region=${params.region}`
-    : region
-    ? `&region=${region}`
-    : "&region=all";
+  const regionQuery = `&region=${chosenRegion ?? "all"}`;
 
   return (
     <main className="min-h-dvh bg-stone-50 pb-24">
       <div className="max-w-md mx-auto px-4 pt-6">
         <div className="flex items-baseline justify-between mb-5">
           <h1>
-            <Wordmark size="sm" />
+            <Wordmark size="md" />
           </h1>
           <span className="flex items-center gap-4">
             {profile ? (
@@ -106,7 +109,7 @@ export default async function HomePage({
         {/* SPEC 3.1 — search is the centrepiece. */}
         <Link
           href="/search"
-          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-stone-500 mb-5"
+          className="flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-500 mb-5"
         >
           <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" aria-hidden>
             <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
@@ -171,12 +174,13 @@ export default async function HomePage({
 
         {tab === "events" ? (
           <EventList
+            key={`events:${region ?? "all"}`}
             events={events}
             regions={regions}
             signedIn={Boolean(profile)}
           />
         ) : posts.length === 0 ? (
-          <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center">
+          <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
             {/* An empty needs-queue is good news, so "nothing here yet"
                 would be exactly the wrong message. */}
             {tab === "needs" ? (
@@ -186,7 +190,7 @@ export default async function HomePage({
                 </p>
                 <Link
                   href={`/?tab=latest${regionQuery}`}
-                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
                 >
                   Back to the feed
                 </Link>
@@ -200,7 +204,7 @@ export default async function HomePage({
                 </p>
                 <Link
                   href="/create"
-                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-white"
+                  className="inline-block rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
                 >
                   Ask the first question
                 </Link>
@@ -209,6 +213,12 @@ export default async function HomePage({
           </div>
         ) : (
           <PostFeed
+            // Remounts when the tab or region changes. Without a key,
+            // the list is seeded into useState once and never updates —
+            // the server sends the right posts and the component keeps
+            // showing the old ones, which is exactly what "switching
+            // tabs does nothing" looked like.
+            key={`${tab}:${region ?? "all"}`}
             initialPosts={posts}
             initialAuthors={authors}
             regions={regions}

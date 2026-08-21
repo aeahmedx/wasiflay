@@ -14,8 +14,8 @@ import Image from "next/image";
  * it crops — but to a window with real margin around the artwork rather
  * than one sized exactly to it.
  *
- * dark:invert turns the black line art white in dark mode, which works
- * cleanly because the artwork is pure black on transparent.
+ * The artwork is black line art on transparent, so it's inverted to
+ * white in dark mode by the .brand-art rule in globals.css.
  */
 
 /**
@@ -23,14 +23,14 @@ import Image from "next/image";
  * than the artwork needs: a shorter window means more margin above and
  * below the letters. Lower this number if anything still clips.
  */
-const HEADER_CROP_RATIO = 3.8;
+const HEADER_CROP_RATIO = 4.4;
 
 export function Wordmark({
-                           size = "md",
-                           tagline = false,
-                           className = "",
-                           priority = false,
-                         }: {
+  size = "md",
+  tagline = false,
+  className = "",
+  priority = false,
+}: {
   size?: "sm" | "md" | "lg";
   tagline?: boolean;
   className?: string;
@@ -44,42 +44,42 @@ export function Wordmark({
   // is invisible on a full-screen background anyway.
   if (tagline) {
     return (
-        <span
-            className={`relative block ${className}`}
-            style={{ width, height: width }}
-            role="img"
-            aria-label="Wasif Lay — a step in the right direction"
-        >
+      <span
+        className={`relative block ${className}`}
+        style={{ width, height: width }}
+        role="img"
+        aria-label="Wasif Lay — a step in the right direction"
+      >
         <Image
-            src={src}
-            alt=""
-            fill
-            priority={priority}
-            sizes={`${width}px`}
-            className="object-contain dark:invert"
+          src={src}
+          alt=""
+          fill
+          priority={priority}
+          sizes={`${width}px`}
+          className="object-contain brand-art"
         />
       </span>
     );
   }
 
   return (
-      <span
-          className={`relative block overflow-hidden ${className}`}
-          style={{ width, height: Math.round(width / HEADER_CROP_RATIO) }}
-          role="img"
-          aria-label="Wasif Lay"
-      >
+    <span
+      className={`relative block overflow-hidden ${className}`}
+      style={{ width, height: Math.round(width / HEADER_CROP_RATIO) }}
+      role="img"
+      aria-label="Wasif Lay"
+    >
       <Image
-          src={src}
-          alt=""
-          fill
-          priority={priority}
-          sizes={`${width}px`}
-          className="object-cover dark:invert"
-          // The lockup sits a touch below the middle of its square, so the
-          // window is biased down to match. Centred, it clipped the
-          // descenders.
-          style={{ objectPosition: "center 52%" }}
+        src={src}
+        alt=""
+        fill
+        priority={priority}
+        sizes={`${width}px`}
+        className="object-cover brand-art"
+        // The lockup sits a touch below the middle of its square, so the
+        // window is biased down to match. Centred, it clipped the
+        // descenders.
+        style={{ objectPosition: "center 52%" }}
       />
     </span>
   );
@@ -87,28 +87,28 @@ export function Wordmark({
 
 /** The signpost alone, for tight spaces. */
 export function Mark({
-                       size = 32,
-                       className = "",
-                     }: {
+  size = 32,
+  className = "",
+}: {
   size?: number;
   className?: string;
 }) {
   return (
-      <span
-          className={`relative block ${className}`}
-          style={{ width: size, height: size }}
-          role="img"
-          aria-label="Wasif Lay"
-      >
+    <span
+      className={`relative block ${className}`}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label="Wasif Lay"
+    >
       {/* Contained rather than cropped — the mark is small enough that
           scaling into the padding isn't worth the risk of clipping it. */}
-        <Image
-            src="/logo-mark.png"
-            alt=""
-            fill
-            sizes={`${size}px`}
-            className="object-contain dark:invert"
-        />
+      <Image
+        src="/logo-mark.png"
+        alt=""
+        fill
+        sizes={`${size}px`}
+        className="object-contain brand-art"
+      />
     </span>
   );
 }

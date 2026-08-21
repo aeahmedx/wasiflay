@@ -26,6 +26,14 @@ export function RegionPicker({
 
   function change(value: string) {
     setPending(true);
+
+    // Remembered so the choice survives opening a post and coming back.
+    // A session-length cookie, not permanent — this is a browsing
+    // preference, not a setting.
+    document.cookie = `wl_region=${encodeURIComponent(value)}; path=/; max-age=${
+      60 * 60 * 24 * 30
+    }; SameSite=Lax`;
+
     // replace, not push: changing the region filter is view state and
     // must not add a history entry for Back to walk through.
     router.replace(`/?tab=${tab}&region=${value}`, { scroll: false });

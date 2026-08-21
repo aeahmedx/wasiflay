@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import {
   createEvent,
   eventErrorMessage,
+  updateEvent,
   type EventKind,
+  type WasifEvent,
 } from "@/lib/queries/events";
 import type { Region } from "@/lib/queries/regions";
 import { BackLink } from "@/components/back-link";
@@ -35,32 +37,55 @@ const input =
   "w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800";
 const label = "block text-sm font-medium text-stone-800 mb-1.5";
 
+/** datetime-local wants local wall-clock time, not an ISO string. */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
+
 export function EventForm({
   userId,
   regions,
   defaultOrganizer,
+  existing = null,
+  organizer = null,
 }: {
   userId: string;
   regions: Region[];
   defaultOrganizer: string;
+  /** Set when editing. Create and edit share this form so the two can't
+   *  drift apart in validation or wording. */
+  existing?: WasifEvent | null;
+  /** Organiser contact isn't in the public view, so it's loaded
+   *  separately and passed in when editing. */
+  organizer?: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+    org: string | null;
+  } | null;
 }) {
   const router = useRouter();
 
-  const [kind, setKind] = useState<EventKind>("physical");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startsAt, setStartsAt] = useState("");
-  const [endsAt, setEndsAt] = useState("");
-  const [region, setRegion] = useState("__all__");
+  const [kind, setKind] = useState<EventKind>(existing?.kind ?? "physical");
+  const [title, setTitle] = useState(existing?.title ?? "");
+  const [description, setDescription] = useState(existing?.description ?? "");
+  const [startsAt, setStartsAt] = useState(toLocalInput(existing?.starts_at ?? null));
+  const [endsAt, setEndsAt] = useState(toLocalInput(existing?.ends_at ?? null));
+  const [region, setRegion] = useState(existing?.region ?? "__all__");
 
-  const [venueName, setVenueName] = useState("");
-  const [address, setAddress] = useState("");
-  const [joinUrl, setJoinUrl] = useState("");
+  const [venueName, setVenueName] = useState(existing?.venue_name ?? "");
+  const [address, setAddress] = useState(existing?.address ?? "");
+  const [joinUrl, setJoinUrl] = useState(existing?.join_url ?? "");
 
-  const [orgName, setOrgName] = useState(defaultOrganizer);
-  const [orgPhone, setOrgPhone] = useState("");
-  const [orgEmail, setOrgEmail] = useState("");
-  const [orgOrg, setOrgOrg] = useState("");
+  const [orgName, setOrgName] = useState(organizer?.name ?? defaultOrganizer);
+  const [orgPhone, setOrgPhone] = useState(organizer?.phone ?? "");
+  const [orgEmail, setOrgEmail] = useState(organizer?.email ?? "");
+  const [orgOrg, setOrgOrg] = useState(organizer?.org ?? "");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +105,7 @@ export function EventForm({
     setSaving(true);
     setError(null);
 
-    try {
-      const created = await createEvent(createClient(), {
+    const payload = {
         creator_id: userId,
         title: title.trim(),
         description: description.trim(),
@@ -98,8 +122,16 @@ export function EventForm({
         organizer_phone: orgPhone.trim() || null,
         organizer_email: orgEmail.trim() || null,
         organizer_org: orgOrg.trim() || null,
-      });
-      router.replace(`/events/${created.id}`);
+    };
+
+    try {
+      if (existing) {
+        await updateEvent(createClient(), existing.id, payload);
+        router.replace(`/events/${existing.id}`);
+      } else {
+        const created = await createEvent(createClient(), payload);
+        router.replace(`/events/${created.id}`);
+      }
       router.refresh();
     } catch (e) {
       setError(eventErrorMessage(e instanceof Error ? e.message : ""));
@@ -112,10 +144,12 @@ export function EventForm({
       <div className="mx-auto max-w-md">
         <BackLink />
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
-          Add an event
+          {existing ? "Edit event" : "Add an event"}
         </h1>
         <p className="mt-1 mb-6 text-stone-600">
-          A moderator checks it before it appears. Usually quick.
+          {existing
+            ? "Changing the time, link or details sends it back for review."
+            : "A moderator checks it before it appears. Usually quick."}
         </p>
 
         {error && (
@@ -361,7 +395,11 @@ export function EventForm({
           disabled={!valid || saving}
           className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
         >
-          {saving ? "Submitting…" : "Submit for review"}
+          {saving
+            ? "Saving…"
+            : existing
+            ? "Save changes"
+            : "Submit for review"}
         </button>
       </div>
     </main>

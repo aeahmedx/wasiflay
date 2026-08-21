@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   getPendingEvents,
@@ -17,6 +18,7 @@ import {
  */
 export function EventReview() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [events, setEvents] = useState<PendingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -53,6 +55,10 @@ export function EventReview() {
       setRejecting(null);
       setNote("");
       await load();
+      // The count on the tab is server-rendered, so reloading the list
+      // alone left it stale — approving three events and still seeing
+      // "Events (3)" reads as the action not working.
+      router.refresh();
     } catch {
       setNotice("That didn't go through.");
     } finally {

@@ -8,6 +8,7 @@ import { BackLink } from "@/components/back-link";
 import { EventRsvp } from "@/components/events/event-rsvp";
 import { EventAttendees } from "@/components/events/event-attendees";
 import { ReportButton } from "@/components/report-button";
+import { ShareButton } from "@/components/share-button";
 
 const KIND_LABEL = {
   physical: "In person",
@@ -112,6 +113,14 @@ export default async function EventPage({
               {event.description}
             </p>
           )}
+
+          <div className="mt-3">
+            <ShareButton
+              path={`/events/${event.id}`}
+              title={event.title}
+              label="Share this event"
+            />
+          </div>
 
           <p className="mt-3 text-sm text-stone-500">
             {event.interested_count} interested

@@ -268,3 +268,55 @@ export function eventErrorMessage(raw: string): string {
   if (raw.includes("FORBIDDEN")) return "You can't do that.";
   return "That didn't go through. Try again.";
 }
+
+
+/** Editing an approved event sends it back for review — see 0027. */
+export async function updateEvent(
+  client: SupabaseClient,
+  id: string,
+  // creator_id is deliberately absent: an edit must never reassign
+  // ownership, and the column grant doesn't allow it anyway.
+  input: Omit<NewEvent, "creator_id">
+): Promise<void> {
+  const { error } = await client.from("events").update(input).eq("id", id);
+  if (error) throw error;
+}
+
+export type OrganizerContact = {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  org: string | null;
+};
+
+/**
+ * Organiser contact isn't in public_events by design, so editing needs a
+ * separate read. RLS on `events` restricts this to the creator and
+ * staff, so a stranger asking for it gets nothing back.
+ */
+export async function getOrganizerContact(
+  client: SupabaseClient,
+  eventId: string
+): Promise<OrganizerContact | null> {
+  const { data, error } = await client
+    .from("events")
+    .select("organizer_name, organizer_phone, organizer_email, organizer_org")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const row = data as {
+    organizer_name: string;
+    organizer_phone: string | null;
+    organizer_email: string | null;
+    organizer_org: string | null;
+  };
+
+  return {
+    name: row.organizer_name,
+    phone: row.organizer_phone,
+    email: row.organizer_email,
+    org: row.organizer_org,
+  };
+}
