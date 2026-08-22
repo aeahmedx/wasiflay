@@ -9,27 +9,28 @@ const REMOVE_AFTER_MS = 1600;
 /**
  * The screen while the app starts.
  *
- * Two deliberate choices, both learned the hard way:
+ * Only rendered on a cold start — the root layout decides, from a
+ * cookie that expires ten minutes after the last activity. Reloading,
+ * reconnecting after losing signal, or coming back a minute later all
+ * skip it; opening the app fresh in the morning shows it.
  *
- * 1. Whether to show it at all is decided on the SERVER, from a cookie,
- *    in the root layout. Deciding on the client meant the server
- *    rendered it visible and the client rendered nothing — a hydration
- *    mismatch, and when hydration breaks the timers that dismiss it
- *    never run. The result was a yellow screen with no way out.
+ * Two things learned the hard way:
  *
- * 2. The fade is a CSS animation, not a JS timer. If hydration fails for
- *    any other reason, the animation still runs and the app is still
- *    usable. The timer below only removes the element afterwards; it
- *    isn't what makes it disappear.
+ * 1. Whether it renders is decided on the SERVER. Deciding on the
+ *    client meant the server rendered it visible and the client
+ *    rendered nothing — a hydration mismatch, and a broken hydration
+ *    meant the timers that dismissed it never ran. People were left
+ *    staring at a yellow screen with no way out.
+ *
+ * 2. The fade is a CSS animation, not a JS timer. If hydration fails
+ *    for any other reason, the animation still runs and the app is
+ *    still usable. The timer below only removes the element afterwards;
+ *    it is not what makes it disappear.
  */
 export function SplashScreen() {
   const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
-    // Remembered for the session so it doesn't replay on every reload —
-    // and reconnecting after losing signal causes a reload.
-    document.cookie = "wl_splash_seen=1; path=/; SameSite=Lax";
-
     const timer = setTimeout(() => setMounted(false), REMOVE_AFTER_MS);
     return () => clearTimeout(timer);
   }, []);
