@@ -187,6 +187,38 @@ h1, h2, h3 {
   }
 }
 
+/* =====================================================================
+   Splash
+
+   The dismissal is a CSS animation, not a JavaScript timer. If
+   hydration ever fails — a bad deploy, a mismatch, a client error — a
+   JS-driven splash stays on screen forever and the app is unusable.
+   An animation runs regardless, so the worst case is a slightly slow
+   app rather than a locked one.
+   ===================================================================== */
+@keyframes wl-splash-out {
+  0%,
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.wl-splash {
+  animation: wl-splash-out 1.45s ease forwards;
+}
+
+/* Someone who asked for less motion gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .wl-splash {
+    animation-duration: 0.9s;
+    animation-timing-function: step-end;
+  }
+}
+
 /* Arabic sits alongside English throughout. */
 [dir="rtl"],
 [dir="auto"] {

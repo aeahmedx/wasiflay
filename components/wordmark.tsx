@@ -19,11 +19,15 @@ import Image from "next/image";
  */
 
 /**
- * Width-to-height ratio of the header's crop window. Deliberately looser
- * than the artwork needs: a shorter window means more margin above and
- * below the letters. Lower this number if anything still clips.
+ * Width-to-height ratio of the header's crop window.
+ *
+ * Deliberately looser than the artwork needs — a lower number means a
+ * taller window and more margin above and below the letters. This has
+ * been tightened and loosened twice; if it clips again, lower it rather
+ * than adjusting the position, because position only trades a clipped
+ * top for a clipped bottom.
  */
-const HEADER_CROP_RATIO = 4.4;
+const HEADER_CROP_RATIO = 3.4;
 
 export function Wordmark({
   size = "md",
@@ -46,7 +50,10 @@ export function Wordmark({
     return (
       <span
         className={`relative block ${className}`}
-        style={{ width, height: width }}
+        // Square and contained, so the artwork can never be cropped.
+        // max-height keeps it inside a short screen rather than pushing
+        // the tagline past the edge.
+        style={{ width, height: width, maxHeight: "60vh", maxWidth: "80vw" }}
         role="img"
         aria-label="Wasif Lay — a step in the right direction"
       >
@@ -76,10 +83,10 @@ export function Wordmark({
         priority={priority}
         sizes={`${width}px`}
         className="object-cover brand-art"
-        // The lockup sits a touch below the middle of its square, so the
-        // window is biased down to match. Centred, it clipped the
-        // descenders.
-        style={{ objectPosition: "center 52%" }}
+        // Centred. The previous downward bias fixed a clipped bottom by
+        // clipping the top instead — the window simply wasn't tall
+        // enough, which is what the ratio above now handles.
+        style={{ objectPosition: "center center" }}
       />
     </span>
   );

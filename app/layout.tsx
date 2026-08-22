@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { SplashScreen } from "@/components/splash-screen";
 
@@ -51,11 +52,25 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  /**
+   * Whether the splash renders is decided here, on the server.
+   *
+   * Deciding it on the client meant the server rendered it visible and
+   * the client rendered nothing — a hydration mismatch, and a broken
+   * hydration meant the timers that dismissed it never ran. People were
+   * left staring at a yellow screen. Server-side, the two always agree.
+   */
+  const seenSplash = (await cookies()).has("wl_splash_seen");
+
   return (
     <html lang="en">
       <body className="antialiased">
-        <SplashScreen />
+        {!seenSplash && <SplashScreen />}
         {children}
       </body>
     </html>

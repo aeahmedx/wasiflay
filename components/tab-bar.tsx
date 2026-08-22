@@ -156,9 +156,20 @@ export function TabBar({
 
   return (
     <>
-      {/* Fixed elements reserve no space, so this keeps the last row of
-          content clear of the bar. Rendered only when the bar shows. */}
-      <div aria-hidden className="h-[4.5rem]" />
+      {/*
+        Fixed elements reserve no space, so this keeps the last row of
+        content clear of the bar.
+
+        It has to include the safe-area inset, because the bar itself
+        adds that as padding — a fixed 4.5rem spacer left content hidden
+        underneath by exactly the inset height on a notched phone, which
+        is why the last line sprang back under the bar when you let go
+        of a scroll.
+      */}
+      <div
+        aria-hidden
+        style={{ height: "calc(4.5rem + env(safe-area-inset-bottom))" }}
+      />
 
       <nav
         aria-label="Main"

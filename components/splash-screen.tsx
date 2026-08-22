@@ -3,63 +3,43 @@
 import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
-/** Long enough to register, short enough not to be in the way. */
-const HOLD_MS = 900;
-const FADE_MS = 320;
+/** Matches the animation in globals.css, plus a little slack. */
+const REMOVE_AFTER_MS = 1600;
 
 /**
  * The screen while the app starts.
  *
- * Matters most installed to the home screen, where a cold start shows a
- * blank frame for a beat and reads as the app being broken. On the open
- * web the browser already shows something, so it's only ever a moment.
+ * Two deliberate choices, both learned the hard way:
  *
- * Once per page load, not per navigation — an app that flashes its logo
- * every time you tap a tab is exhausting.
+ * 1. Whether to show it at all is decided on the SERVER, from a cookie,
+ *    in the root layout. Deciding on the client meant the server
+ *    rendered it visible and the client rendered nothing — a hydration
+ *    mismatch, and when hydration breaks the timers that dismiss it
+ *    never run. The result was a yellow screen with no way out.
+ *
+ * 2. The fade is a CSS animation, not a JS timer. If hydration fails for
+ *    any other reason, the animation still runs and the app is still
+ *    usable. The timer below only removes the element afterwards; it
+ *    isn't what makes it disappear.
  */
 export function SplashScreen() {
-  /**
-   * Once per browsing session, not once per page load.
-   *
-   * Reconnecting after losing signal triggers a reload, and so does
-   * cold-starting the installed app — without this, the logo animation
-   * played every single time, which is exhausting rather than branded.
-   *
-   * A session cookie: it clears itself when the browser closes, so the
-   * next real visit sees it again. Read lazily rather than in an effect,
-   * so it never flashes before being suppressed.
-   */
-  const [phase, setPhase] = useState<"visible" | "fading" | "gone">(() =>
-    typeof document !== "undefined" &&
-    document.cookie.includes("wl_splash_seen=1")
-      ? "gone"
-      : "visible"
-  );
+  const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
-    if (phase === "gone") return;
+    // Remembered for the session so it doesn't replay on every reload —
+    // and reconnecting after losing signal causes a reload.
     document.cookie = "wl_splash_seen=1; path=/; SameSite=Lax";
 
-    const hold = setTimeout(() => setPhase("fading"), HOLD_MS);
-    const done = setTimeout(() => setPhase("gone"), HOLD_MS + FADE_MS);
-    return () => {
-      clearTimeout(hold);
-      clearTimeout(done);
-    };
-    // Runs once; phase changes are driven by the timers above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const timer = setTimeout(() => setMounted(false), REMOVE_AFTER_MS);
+    return () => clearTimeout(timer);
   }, []);
 
-  if (phase === "gone") return null;
+  if (!mounted) return null;
 
   return (
     <div
       aria-hidden
-      // Brand yellow in light, the app's own near-black in dark. Fully
-      // opaque so nothing shows through mid-hydration.
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-amber-400 transition-opacity duration-300 dark:bg-stone-50 ${
-        phase === "fading" ? "pointer-events-none opacity-0" : "opacity-100"
-      }`}
+      className="wl-splash pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-amber-400 px-8 dark:bg-stone-50"
       style={{
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
