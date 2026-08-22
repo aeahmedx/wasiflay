@@ -66,7 +66,7 @@ export function ProfileEditForm({
   }
 
   return (
-      <main className="min-h-dvh bg-stone-50 px-4 py-6">
+      <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
         <div className="max-w-sm mx-auto">
           <BackLink fallback={`/profile/${profile.id}`} />
 

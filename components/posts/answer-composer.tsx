@@ -64,7 +64,7 @@ export function AnswerComposer({
 
   if (userId && isBanned) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 pt-3 pb-safe">
         <p className="text-center text-sm text-stone-600">
           Your account is suspended, so you can&apos;t answer right now. You
           can still read everything.
@@ -75,7 +75,7 @@ export function AnswerComposer({
 
   if (!userId) {
     return (
-      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+      <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 pt-3 pb-safe">
         <Link
           href={`/signup?next=${encodeURIComponent(`/posts/${postId}`)}`}
           className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
@@ -87,7 +87,7 @@ export function AnswerComposer({
   }
 
   return (
-    <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 py-3">
+    <div className="sticky bottom-0 border-t border-stone-200 bg-stone-0 px-4 pt-3 pb-safe">
       {error && (
         <p role="alert" className="mb-2 text-sm text-red-700">
           {error}

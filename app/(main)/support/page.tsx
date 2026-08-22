@@ -30,7 +30,7 @@ const TOPICS = [
 
 export default function SupportPage() {
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 py-6">
+    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <div className="mx-auto max-w-md">
         <BackLink />
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">

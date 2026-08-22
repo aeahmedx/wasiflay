@@ -20,7 +20,7 @@ export default async function NewEventPage() {
 
   if (profile?.is_banned) {
     return (
-      <main className="min-h-dvh bg-stone-50 px-4 py-6">
+      <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
         <div className="mx-auto max-w-md">
           <BackLink />
           <div className="mt-6 rounded-lg border border-stone-200 bg-stone-0 px-4 py-6">

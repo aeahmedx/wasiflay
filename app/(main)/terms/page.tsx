@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Terms of Use" };
 
 export default function TermsPage() {
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 py-6">
+    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <article className="mx-auto max-w-md">
         <BackLink />
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">

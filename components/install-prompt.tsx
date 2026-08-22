@@ -54,7 +54,7 @@ export function InstallPrompt() {
   if (!showIOS && !canPromptNative) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-40 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 shadow-lg">
+    <div className="fixed inset-x-3 bottom-safe z-40 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 shadow-lg">
       {showIOS ? (
         <>
           <p className="font-medium text-stone-900">Keep Wasif Lay handy</p>

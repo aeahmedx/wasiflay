@@ -33,7 +33,7 @@ export default async function CreatePage({
   // and get a generic failure on submit. Say it before they type.
   if (profile?.is_banned) {
     return (
-      <main className="min-h-dvh bg-stone-50 px-4 py-6">
+      <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
         <div className="max-w-md mx-auto">
           <BackLink />
           <div className="mt-6 rounded-lg border border-stone-200 bg-stone-0 px-4 py-6">

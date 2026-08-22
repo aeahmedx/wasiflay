@@ -50,7 +50,7 @@ export function PostEditForm({
   }
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 py-6">
+    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <div className="max-w-md mx-auto">
         {/* BackLink, not a Link: a Link pushes a new history entry, so
             post -> edit -> post left Back on the post pointing at edit,

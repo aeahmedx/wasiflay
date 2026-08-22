@@ -8,7 +8,7 @@ export default async function NotificationsPage() {
   if (!profile) redirect("/signup?next=%2Fnotifications");
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 py-6">
+    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <div className="max-w-md mx-auto">
         <h1 className="mb-5 text-2xl font-semibold tracking-tight text-stone-900">
           Activity
