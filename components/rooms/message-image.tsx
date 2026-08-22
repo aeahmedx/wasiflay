@@ -75,7 +75,7 @@ export function MessageImage({
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-white"
+            className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-stone-0"
           >
             Close
           </button>

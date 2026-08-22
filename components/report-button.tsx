@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createReport, type ReportTarget } from "@/lib/queries/moderation";
-import { RadioOption } from "@/components/ui/toggle";
 
 const REASONS = [
   "Harassment or abuse",
@@ -84,19 +83,22 @@ export function ReportButton({
             What&apos;s wrong with this?
           </p>
 
-          {/* Radios above an open detail box: picking one with a plain
-              input would drop the keyboard mid-sentence. */}
-          <div role="radiogroup" aria-label="Reason" className="space-y-0.5">
+          <div className="space-y-1.5">
             {REASONS.map((r) => (
-              <RadioOption
+              <label
                 key={r}
-                name={`reason-${targetId}`}
-                value={r}
-                selected={reason === r}
-                onSelectAction={setReason}
+                className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer"
               >
+                <input
+                  type="radio"
+                  name={`reason-${targetId}`}
+                  value={r}
+                  checked={reason === r}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-3.5 h-3.5 accent-emerald-800"
+                />
                 {r}
-              </RadioOption>
+              </label>
             ))}
           </div>
 

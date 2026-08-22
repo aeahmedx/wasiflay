@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
-  adminHardDelete,
   claimTarget,
   getReportQueue,
   modRemove,
@@ -15,7 +14,6 @@ import {
   type QueueItem,
   type ReportStatus,
 } from "@/lib/queries/moderation";
-import { deleteStoredImage } from "@/lib/queries/images";
 
 const TABS: { key: ReportStatus; label: string }[] = [
   { key: "open", label: "Open" },
@@ -55,7 +53,6 @@ export function ReportQueue({
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmBan, setConfirmBan] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const itemKey = (i: QueueItem) => `${i.target_type}:${i.target_id}`;
 
@@ -124,15 +121,7 @@ export function ReportQueue({
 
   async function act(
     item: QueueItem,
-    action:
-      | "claim"
-      | "release"
-      | "remove"
-      | "restore"
-      | "ban"
-      | "resolve"
-      | "dismiss"
-      | "delete"
+    action: "claim" | "release" | "remove" | "restore" | "ban" | "resolve" | "dismiss"
   ) {
     setBusy(itemKey(item));
     setNotice(null);
@@ -150,15 +139,6 @@ export function ReportQueue({
       } else if (action === "ban" && item.author_id) {
         await modSetBan(supabase, item.author_id, true);
         setConfirmBan(null);
-      } else if (action === "delete") {
-        // Remove the file first: if the row goes and the storage call
-        // then fails, the image stays reachable with nothing pointing at
-        // it to find later.
-        if (item.image_url) {
-          await deleteStoredImage(supabase, item.image_url);
-        }
-        await adminHardDelete(supabase, item.target_type, item.target_id);
-        setConfirmDelete(null);
       } else if (action === "resolve" || action === "dismiss") {
         const n = await resolveTarget(
           supabase,
@@ -172,11 +152,7 @@ export function ReportQueue({
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       setNotice(
-        msg.includes("ADMIN_ONLY")
-          ? "Only an admin can delete permanently."
-          : msg.includes("CANNOT_DELETE_PROFILE")
-          ? "Accounts can't be deleted from here."
-          : msg.includes("CANNOT_BAN_ADMIN")
+        msg.includes("CANNOT_BAN_ADMIN")
           ? "Admins can't be banned."
           : msg.includes("CANNOT_BAN_SELF")
           ? "You can't ban yourself."
@@ -414,34 +390,6 @@ export function ReportQueue({
                             className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-800 disabled:opacity-40"
                           >
                             Ban author
-                          </button>
-                        ))}
-
-                      {isAdmin &&
-                        item.target_type !== "profile" &&
-                        (confirmDelete === k ? (
-                          <>
-                            <button
-                              onClick={() => act(item, "delete")}
-                              disabled={busy === k}
-                              className="rounded-lg bg-red-800 px-3 py-1.5 text-sm font-medium text-stone-0 disabled:opacity-40"
-                            >
-                              Confirm: delete forever
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-700"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(k)}
-                            disabled={busy === k}
-                            className="rounded-lg border border-red-400 px-3 py-1.5 text-sm text-red-900 disabled:opacity-40"
-                          >
-                            Delete permanently
                           </button>
                         ))}
 
