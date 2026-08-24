@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRoomMessages } from "@/lib/hooks/use-room-messages";
 import { usePresenceCount } from "@/lib/hooks/use-presence";
 import { contentErrorMessage } from "@/lib/content-safety";
+import { GoalButton } from "@/components/rooms/goal-button";
 import {
   RateLimitError,
   sendMessage,
@@ -452,6 +453,14 @@ export function RoomView({
         >
           {notice}
         </p>
+      )}
+
+      {/* Match rooms get a GOAL button. Other rooms don't — it would be
+          noise in a city room. */}
+      {room.type === "match" && (
+        <div className="border-t border-stone-200 bg-stone-0 pt-2">
+          <GoalButton roomId={room.id} canPost={Boolean(userId) && !isBanned} />
+        </div>
       )}
 
       <div

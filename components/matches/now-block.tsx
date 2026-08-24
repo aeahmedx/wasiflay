@@ -1,9 +1,11 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getCurrentMatch,
   getLatestResult,
+  getLiveMatches,
   getMyStanding,
+  getNextMatch,
+  getUpcomingMatches,
 } from "@/lib/queries/predictions";
 import { TournamentBlock } from "@/components/matches/tournament-block";
 
@@ -17,16 +19,18 @@ import { TournamentBlock } from "@/components/matches/tournament-block";
 export async function NowBlock({ userId }: { userId: string | null }) {
   const supabase = await createClient();
 
-  const [match, result] = await Promise.all([
-    getCurrentMatch(supabase),
-    // Not gated on being signed in: a result is news either way, and
-    // someone signed out seeing the scoreboard is the point.
+  const [live, next, result] = await Promise.all([
+    getLiveMatches(supabase),
+    getNextMatch(supabase),
     getLatestResult(supabase),
   ]);
 
-  if (!match && !result) return null;
+  if (live.length === 0 && !next && !result) return null;
 
-  const standing = userId ? await getMyStanding(supabase) : null;
+  const [upcoming, standing] = await Promise.all([
+    getUpcomingMatches(supabase, next?.id ?? null, 6),
+    userId ? getMyStanding(supabase) : Promise.resolve(null),
+  ]);
 
   // The cookie means "you've seen this result", so the block opens
   // collapsed rather than disappearing.
@@ -35,7 +39,9 @@ export async function NowBlock({ userId }: { userId: string | null }) {
   return (
     <TournamentBlock
       result={result}
-      match={match}
+      live={live}
+      next={next}
+      upcoming={upcoming}
       standing={standing}
       userId={userId}
       startCollapsed={Boolean(result) && seen === result?.id}

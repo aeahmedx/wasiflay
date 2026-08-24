@@ -11,8 +11,10 @@ import {
   getStaffMatches,
   kickoffLabel,
   lockMatch,
+  unlockMatch,
   ROUND_LABEL,
   setResult,
+  updateMatch,
   type DeleteImpact,
   type MatchRound,
   type StaffMatch,
@@ -52,6 +54,15 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [impact, setImpact] = useState<DeleteImpact | null>(null);
   const [typed, setTyped] = useState("");
+
+  // Editing, per match. Kickoff times slip constantly at community
+  // tournaments, and unlocking a match without being able to move its
+  // time just reopens something the clock has already closed.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [eHome, setEHome] = useState("");
+  const [eAway, setEAway] = useState("");
+  const [eKick, setEKick] = useState("");
+  const [eRound, setERound] = useState<MatchRound>("group");
 
   // Result entry, per match
   const [scoring, setScoring] = useState<string | null>(null);
@@ -101,14 +112,31 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
     }
   }
 
-  async function lock(id: string) {
-    setBusy(id);
+  async function toggleLock(m: StaffMatch) {
+    setBusy(m.id);
+    setNotice(null);
+    const locking = m.status === "scheduled";
     try {
-      await lockMatch(supabase, id);
+      if (locking) {
+        await lockMatch(supabase, m.id);
+        // Locking opens the room in the same action — worth saying, so
+        // nobody goes looking for a second button.
+        setNotice("Picks closed. The room is open.");
+      } else {
+        await unlockMatch(supabase, m.id);
+        setNotice("Picks reopened. Move the kickoff time if it slipped.");
+      }
       await load();
       router.refresh();
-    } catch {
-      setNotice("Couldn't lock it.");
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      setNotice(
+        raw.includes("MATCH_FINISHED")
+          ? "Clear the result before reopening picks."
+          : locking
+          ? "Couldn't lock it."
+          : "Couldn't reopen it."
+      );
     } finally {
       setBusy(null);
     }
@@ -135,6 +163,50 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
       );
     } catch {
       setNotice("Couldn't save the result.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** datetime-local wants local wall-clock time, not an ISO string. */
+  function toLocalInput(iso: string): string {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function startEdit(m: StaffMatch) {
+    setEditing(m.id);
+    setEHome(m.home_team);
+    setEAway(m.away_team);
+    setEKick(toLocalInput(m.kicks_off_at));
+    setERound(m.round);
+    setNotice(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!eHome.trim() || !eAway.trim() || !eKick) return;
+    setBusy(id);
+    setNotice(null);
+    try {
+      await updateMatch(
+        supabase,
+        id,
+        eHome.trim(),
+        eAway.trim(),
+        new Date(eKick).toISOString(),
+        eRound
+      );
+      setEditing(null);
+      await load();
+      router.refresh();
+      // Predictions already made are untouched — someone who picked in
+      // good faith keeps their pick when a time moves.
+      setNotice("Match updated. Existing predictions kept.");
+    } catch {
+      setNotice("Couldn't save those changes.");
     } finally {
       setBusy(null);
     }
@@ -188,8 +260,9 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs leading-relaxed text-stone-500">
-          Lock a match when the ball actually moves, not when the schedule
-          said. Enter the result the moment it ends.
+          Lock when the ball actually moves, not when the schedule said.
+          Unlock if kickoff slips — you&apos;ll need to move the time too.
+          Enter the result the moment it ends.
         </p>
         <button
           onClick={() => setAdding((v) => !v)}
@@ -290,7 +363,71 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
                 )}
               </div>
 
-              {deleting === m.id ? (
+              {editing === m.id ? (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={eHome}
+                      onChange={(e) => setEHome(e.target.value)}
+                      aria-label="Home team"
+                      dir="auto"
+                      className={input}
+                    />
+                    <input
+                      value={eAway}
+                      onChange={(e) => setEAway(e.target.value)}
+                      aria-label="Away team"
+                      dir="auto"
+                      className={input}
+                    />
+                  </div>
+
+                  <input
+                    type="datetime-local"
+                    value={eKick}
+                    onChange={(e) => setEKick(e.target.value)}
+                    aria-label="Kickoff"
+                    className={input}
+                  />
+
+                  <select
+                    value={eRound}
+                    onChange={(e) => setERound(e.target.value as MatchRound)}
+                    aria-label="Round"
+                    className={input}
+                  >
+                    {ROUNDS.map((r) => (
+                      <option key={r} value={r}>
+                        {ROUND_LABEL[r]}
+                      </option>
+                    ))}
+                  </select>
+
+                  {m.prediction_count > 0 && (
+                    <p className="text-sm text-stone-600">
+                      {m.prediction_count}{" "}
+                      {m.prediction_count === 1 ? "prediction" : "predictions"}{" "}
+                      on this — they stay as they are.
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveEdit(m.id)}
+                      disabled={busy === m.id}
+                      className="rounded-lg bg-emerald-800 px-3.5 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
+                    >
+                      {busy === m.id ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditing(null)}
+                      className="rounded-lg border border-stone-300 px-3.5 py-2 text-sm text-stone-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : deleting === m.id ? (
                 <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-3">
                   <p className="text-sm font-medium text-stone-900">
                     Delete {m.home_team} v {m.away_team}?
@@ -408,13 +545,27 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
                 </div>
               ) : (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {m.status === "scheduled" && (
+                  {m.status !== "finished" && (
                     <button
-                      onClick={() => lock(m.id)}
+                      onClick={() => toggleLock(m)}
                       disabled={busy === m.id}
                       className="rounded-lg border border-stone-300 px-3.5 py-2 text-sm font-medium text-stone-800 disabled:opacity-40"
                     >
-                      {busy === m.id ? "…" : "Lock picks"}
+                      {busy === m.id
+                        ? "…"
+                        : m.status === "scheduled"
+                        ? "Lock"
+                        : "Unlock"}
+                    </button>
+                  )}
+
+                  {m.status !== "finished" && (
+                    <button
+                      onClick={() => startEdit(m)}
+                      disabled={busy === m.id}
+                      className="rounded-lg border border-stone-300 px-3.5 py-2 text-sm font-medium text-stone-800 disabled:opacity-40"
+                    >
+                      Edit
                     </button>
                   )}
 

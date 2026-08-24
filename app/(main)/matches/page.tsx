@@ -28,9 +28,15 @@ export default async function MatchesPage() {
    * rather than quietly missing.
    */
   const playing = matches.filter(
-    (m) => !m.is_open && m.status !== "finished"
+    (m) =>
+      m.status !== "finished" &&
+      new Date(m.kicks_off_at).getTime() <= Date.now()
   );
-  const upcoming = matches.filter((m) => m.is_open);
+  const upcoming = matches.filter(
+    (m) =>
+      m.status !== "finished" &&
+      new Date(m.kicks_off_at).getTime() > Date.now()
+  );
   const results = matches
     .filter((m) => m.status === "finished")
     .reverse();

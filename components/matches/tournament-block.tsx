@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Match, Standing } from "@/lib/queries/predictions";
 import { PredictForm } from "@/components/matches/predict-form";
+import { MatchRow } from "@/components/matches/match-row";
 
 const HEADLINE: Record<string, string> = {
   exact: "Called it exactly",
@@ -71,13 +72,21 @@ function formatLeft(ms: number): string {
  */
 export function TournamentBlock({
   result,
-  match,
+  live,
+  next,
+  upcoming,
   standing,
   userId,
   startCollapsed = false,
 }: {
   result: Match | null;
-  match: Match | null;
+  /** Everything being played right now. Was a single match, which meant
+   *  two of three simultaneous kickoffs were invisible. */
+  live: Match[];
+  /** The soonest match still open for picks. */
+  next: Match | null;
+  /** The rest of the open fixtures, behind a toggle. */
+  upcoming: Match[];
   standing: Standing | null;
   userId: string | null;
   startCollapsed?: boolean;
@@ -96,26 +105,25 @@ export function TournamentBlock({
    */
   const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
 
-  const left = useCountdown(match?.kicks_off_at ?? null);
+  const [showUpcoming, setShowUpcoming] = useState(false);
+  const left = useCountdown(next?.kicks_off_at ?? null);
 
   /**
    * Locking a match has to reach people who already have this open —
    * otherwise the Predict button sits there and gets rejected on tap,
    * which reads as broken rather than as too late.
    */
+  /**
+   * Any match change — a lock, a result — has to reach people already
+   * looking at this. One channel for the whole table rather than one
+   * per match: simpler, and the row count here is tiny.
+   */
   useEffect(() => {
-    if (!match) return;
-
     const channel = supabase
-      .channel(`match:${match.id}`)
+      .channel("tournament-block")
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "matches",
-          filter: `id=eq.${match.id}`,
-        },
+        { event: "*", schema: "public", table: "matches" },
         () => router.refresh()
       )
       .subscribe();
@@ -123,19 +131,19 @@ export function TournamentBlock({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, match, router]);
+  }, [supabase, router]);
 
-  if (!result && !match) return null;
+  if (!result && live.length === 0 && !next) return null;
 
   // Kickoff passing closes picks with no round trip. The server agrees —
   // match_is_open() reads the same clock. Before the first tick `left`
   // is null, so we trust the server's own is_open until then.
   const kickedOff = left !== null && left <= 0;
-  const open = Boolean(match?.is_open) && !kickedOff;
-  const live = match ? !open && match.status !== "finished" : false;
+  const open = Boolean(next?.is_open) && !kickedOff;
+
   const serverPick =
-    match?.my_home !== null && match?.my_home !== undefined
-      ? ([match.my_home, match.my_away] as [number, number])
+    next?.my_home !== null && next?.my_home !== undefined
+      ? ([next.my_home, next.my_away] as [number, number])
       : null;
 
   // Local wins until the server agrees, then they're the same value.
@@ -160,11 +168,16 @@ export function TournamentBlock({
   }
 
   if (collapsed) {
-    const summary = match
-      ? `${match.home_team} v ${match.away_team}`
-      : result
-      ? `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
-      : "";
+    const summary =
+      live.length > 1
+        ? `${live.length} matches on now`
+        : live.length === 1
+        ? `${live[0].home_team} v ${live[0].away_team}`
+        : next
+        ? `${next.home_team} v ${next.away_team}`
+        : result
+        ? `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
+        : "";
 
     return (
       <button
@@ -172,7 +185,7 @@ export function TournamentBlock({
         className="mb-4 flex w-full items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-left"
       >
         <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-amber-900">
-          {live ? "Live" : "Tournament"}
+          {live.length > 0 ? "Live" : "Tournament"}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm text-stone-800" dir="auto">
           {summary}
@@ -229,42 +242,85 @@ export function TournamentBlock({
         </div>
       )}
 
-      {/* --- what's on next ---------------------------------------- */}
-      {match && (
+      {/* --- being played right now ------------------------------- */}
+      {live.length > 0 && (
+        <div className="border-b border-amber-200 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+            {live.length > 1 ? `${live.length} playing now` : "Playing now"}
+          </p>
+
+          <ul className="mt-1.5 space-y-2">
+            {live.map((m) => {
+              const myPick =
+                m.my_home !== null
+                  ? `${m.my_home}\u2013${m.my_away}`
+                  : null;
+
+              return (
+                <li key={m.id} className="flex items-center gap-2">
+                  <Link
+                    href={`/matches/${m.id}`}
+                    className="min-w-0 flex-1 truncate font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
+                    dir="auto"
+                  >
+                    {m.home_team} v {m.away_team}
+                  </Link>
+
+                  {myPick && (
+                    <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-900">
+                      {myPick}
+                    </span>
+                  )}
+
+                  {m.room_slug && (
+                    <Link
+                      href={`/rooms/${m.room_slug}`}
+                      className="shrink-0 rounded-full bg-emerald-800 px-3 py-1 text-sm font-medium text-stone-0"
+                    >
+                      Room
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* --- next one to pick -------------------------------------- */}
+      {next && (
         <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-              {live ? "Playing now" : "Next up"}
+              Next up
             </span>
-            {!live && !kickedOff && left !== null && (
+            {!kickedOff && left !== null && (
               <span className="text-xs font-medium tabular-nums text-amber-900">
                 {formatLeft(left)}
               </span>
             )}
           </div>
 
-          {/* The fixture is the link, so a separate "details" button
-              isn't needed beside it. */}
           <Link
-            href={`/matches/${match.id}`}
+            href={`/matches/${next.id}`}
             className="mt-1 block text-lg font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
             dir="auto"
           >
-            {match.home_team} v {match.away_team}
+            {next.home_team} v {next.away_team}
           </Link>
 
           {/* Shown only once the number flatters — "2 predictions" reads
               as an empty app, nothing reads as a fresh one. */}
-          {match.prediction_count >= 10 && (
+          {next.prediction_count >= 10 && (
             <p className="mt-0.5 text-sm text-stone-700">
-              {match.prediction_count} predictions
+              {next.prediction_count} predictions
             </p>
           )}
 
           {picking && userId ? (
             <div className="mt-3">
               <PredictForm
-                match={match}
+                match={next}
                 onDoneAction={(h, a) => {
                   setJustPicked([h, a]);
                   setPicking(false);
@@ -273,7 +329,7 @@ export function TournamentBlock({
             </div>
           ) : (
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {hasPick && (
+              {hasPick && pick && (
                 <span className="rounded-full bg-stone-0 px-3 py-1.5 text-sm font-medium text-stone-900">
                   You said {pick[0]}
                   {"\u2013"}
@@ -298,23 +354,50 @@ export function TournamentBlock({
                   </Link>
                 ))}
 
-              {!open && !hasPick && match.status !== "finished" && (
+              {!open && !hasPick && (
                 <span className="text-sm text-stone-700">Picks closed</span>
               )}
-
-              {match.room_slug && (
-                <Link
-                  href={`/rooms/${match.room_slug}`}
-                  className="rounded-lg border border-stone-300 bg-stone-0 px-4 py-2 text-sm font-medium text-stone-800"
-                >
-                  Join the room
-                </Link>
-              )}
-
             </div>
           )}
         </div>
       )}
+
+      {/* --- the rest, folded away --------------------------------- */}
+      <div className="border-t border-amber-200">
+        {upcoming.length > 0 ? (
+          <>
+            <button
+              onClick={() => setShowUpcoming((v) => !v)}
+              aria-expanded={showUpcoming}
+              className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-stone-700"
+            >
+              <span>
+                {upcoming.length} more{" "}
+                {upcoming.length === 1 ? "match" : "matches"} to pick
+              </span>
+              <span className="text-stone-500">
+                {showUpcoming ? "Hide" : "Show"}
+              </span>
+            </button>
+
+            {showUpcoming && (
+              <ul className="space-y-2 px-4 pb-3">
+                {upcoming.map((m) => (
+                  <li key={m.id}>
+                    <MatchRow match={m} userId={userId} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <p className="px-4 py-2.5 text-sm text-stone-600">
+            {next || live.length > 0
+              ? "Nothing else scheduled yet."
+              : "No matches coming up."}
+          </p>
+        )}
+      </div>
 
       {/*
         The two things worth doing next, given their own row.
@@ -387,12 +470,12 @@ export function TournamentBlock({
             See who called it
           </Link>
         )}
-        {match && (
+        {next && (
           <Link
-            href={`/matches/${match.id}`}
+            href={`/matches/${next.id}`}
             className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"
           >
-            {match.is_open ? "Match details" : "See picks"}
+            Match details
           </Link>
         )}
         <Link

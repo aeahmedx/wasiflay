@@ -61,6 +61,30 @@ export async function getMatches(
   return (data ?? []) as unknown as Match[];
 }
 
+/**
+ * Matches still open for picks, soonest first — the ones worth offering
+ * someone who has just dealt with the match in front of them.
+ */
+export async function getUpcomingMatches(
+  client: SupabaseClient,
+  excludeId: string | null,
+  limit = 6
+): Promise<Match[]> {
+  let query = client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .eq("status", "scheduled")
+    .gt("kicks_off_at", new Date().toISOString())
+    .order("kicks_off_at", { ascending: true })
+    .limit(limit + 1);
+
+  if (excludeId) query = query.neq("id", excludeId);
+
+  const { data, error } = await query;
+  if (error) return [];
+  return ((data ?? []) as unknown as Match[]).slice(0, limit);
+}
+
 export async function getMatch(
   client: SupabaseClient,
   id: string
@@ -80,6 +104,46 @@ export async function getMatch(
  * or the next one to kick off. This is what makes the home screen answer
  * "what should I do right now" during a tournament.
  */
+/**
+ * Every match currently being played.
+ *
+ * Was limit(1), which meant that with three games kicking off together
+ * you saw one and the other two were invisible. A match stays here
+ * until a result is entered — no time window, because a fixture with no
+ * score is exactly the thing worth still seeing.
+ */
+export async function getLiveMatches(
+  client: SupabaseClient
+): Promise<Match[]> {
+  const { data, error } = await client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .neq("status", "finished")
+    .lte("kicks_off_at", new Date().toISOString())
+    .order("kicks_off_at", { ascending: true })
+    .limit(8);
+
+  if (error) return [];
+  return (data ?? []) as unknown as Match[];
+}
+
+/** The soonest match still open for picks. */
+export async function getNextMatch(
+  client: SupabaseClient
+): Promise<Match | null> {
+  const { data, error } = await client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .eq("status", "scheduled")
+    .gt("kicks_off_at", new Date().toISOString())
+    .order("kicks_off_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data as unknown as Match | null;
+}
+
 export async function getCurrentMatch(
   client: SupabaseClient
 ): Promise<Match | null> {
@@ -309,6 +373,19 @@ export async function lockMatch(
   if (error) throw error;
 }
 
+/**
+ * Reopens picks. Doesn't override kickoff — a match whose scheduled
+ * time has passed stays closed until that time is moved, so nobody
+ * picks a game they're already watching.
+ */
+export async function unlockMatch(
+  client: SupabaseClient,
+  id: string
+): Promise<void> {
+  const { error } = await client.rpc("unlock_match", { p_match: id });
+  if (error) throw error;
+}
+
 /** Returns how many predictions were scored. Safe to call again to
  *  correct a mistake — it overwrites points rather than adding to them. */
 export async function setResult(
@@ -391,4 +468,38 @@ export async function deleteMatch(
 ): Promise<void> {
   const { error } = await client.rpc("delete_match", { p_match: matchId });
   if (error) throw error;
+}
+
+
+/** Distinct people who called GOAL in the last 45 seconds. */
+export async function getGoalBurst(
+  client: SupabaseClient,
+  roomId: string
+): Promise<number> {
+  const { data, error } = await client.rpc("goal_burst", { p_room: roomId });
+  if (error) return 0;
+  return (data as number) ?? 0;
+}
+
+export class TooSoonError extends Error {}
+
+/**
+ * Says that people reacted. Says nothing about the score — a crowd-voted
+ * scoreline is gamed by whoever is loudest, drifts once people stop
+ * bothering, and ends up contradicting the official result in front of
+ * everyone.
+ */
+export async function callGoal(
+  client: SupabaseClient,
+  roomId: string
+): Promise<number> {
+  const { data, error } = await client.rpc("call_goal", { p_room: roomId });
+
+  if (error) {
+    if (error.message.includes("TOO_SOON")) {
+      throw new TooSoonError("Give it a second.");
+    }
+    throw error;
+  }
+  return (data as number) ?? 1;
 }
