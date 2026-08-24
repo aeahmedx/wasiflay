@@ -6,6 +6,7 @@ import { UserSearch } from "@/components/mod/user-search";
 import { RemovedContent } from "@/components/mod/removed-content";
 import { KillSwitch } from "@/components/mod/kill-switch";
 import { EventReview } from "@/components/mod/event-review";
+import { MatchAdmin } from "@/components/mod/match-admin";
 import { getPendingEventCount } from "@/lib/queries/events";
 import { getSiteSettings } from "@/lib/queries/safety";
 import { createClient } from "@/lib/supabase/server";
@@ -32,10 +33,11 @@ export default async function ModPage({
   const onUsers = view === "users";
   const onRemoved = view === "removed";
   const onEvents = view === "events";
+  const onMatches = view === "matches";
   const isAdmin = profile.role === "admin";
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
         <BackLink />
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">
@@ -55,6 +57,8 @@ export default async function ModPage({
                 ? "removed"
                 : onEvents
                 ? "events"
+                : onMatches
+                ? "matches"
                 : "reports"
             }
             tabs={[
@@ -71,6 +75,11 @@ export default async function ModPage({
                   pendingEvents > 0 ? `Events (${pendingEvents})` : "Events",
                 href: "/mod?view=events",
               },
+              {
+                key: "matches",
+                label: "Matches",
+                href: "/mod?view=matches",
+              },
             ]}
           />
         </div>
@@ -78,6 +87,8 @@ export default async function ModPage({
         <ErrorBoundary label="The moderation panel">
           {onUsers ? (
             <UserSearch isAdmin={isAdmin} viewerId={profile.id} />
+          ) : onMatches ? (
+            <MatchAdmin />
           ) : onEvents ? (
             <EventReview />
           ) : onRemoved ? (
