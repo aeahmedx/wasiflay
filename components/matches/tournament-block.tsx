@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -15,21 +15,35 @@ const HEADLINE: Record<string, string> = {
   none: "No points",
 };
 
-function useCountdown(iso: string | null) {
-  const [left, setLeft] = useState(() =>
-    iso ? new Date(iso).getTime() - Date.now() : 0
+/**
+ * A ticking clock, safe to render on the server.
+ *
+ * Reading Date.now() during render is a hydration mismatch waiting to
+ * happen — the server renders "2m 22s", the client hydrates a second
+ * later and renders "2m 21s", and React throws out the tree.
+ *
+ * useSyncExternalStore is the API for exactly this. The server snapshot
+ * is null, so the countdown simply isn't rendered server-side; the
+ * client fills it in on the first tick after hydration. Nothing to
+ * mismatch, because the server never claims a time.
+ */
+function subscribeToSeconds(onTick: () => void) {
+  const timer = setInterval(onTick, 1000);
+  return () => clearInterval(timer);
+}
+
+function useNow(): number | null {
+  return useSyncExternalStore(
+    subscribeToSeconds,
+    () => Date.now(),
+    () => null
   );
+}
 
-  useEffect(() => {
-    if (!iso) return;
-    const timer = setInterval(
-      () => setLeft(new Date(iso).getTime() - Date.now()),
-      1000
-    );
-    return () => clearInterval(timer);
-  }, [iso]);
-
-  return left;
+function useCountdown(iso: string | null): number | null {
+  const now = useNow();
+  if (!iso || now === null) return null;
+  return new Date(iso).getTime() - now;
 }
 
 function formatLeft(ms: number): string {
@@ -73,6 +87,15 @@ export function TournamentBlock({
   const [collapsed, setCollapsed] = useState(startCollapsed);
   const [picking, setPicking] = useState(false);
 
+  /**
+   * The pick just made, held locally until the server catches up.
+   *
+   * Without this, saving closes the form and nothing changes until
+   * router.refresh() returns — a second of the app looking like it
+   * ignored the tap.
+   */
+  const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
+
   const left = useCountdown(match?.kicks_off_at ?? null);
 
   /**
@@ -105,11 +128,19 @@ export function TournamentBlock({
   if (!result && !match) return null;
 
   // Kickoff passing closes picks with no round trip. The server agrees —
-  // match_is_open() reads the same clock.
-  const kickedOff = left <= 0;
+  // match_is_open() reads the same clock. Before the first tick `left`
+  // is null, so we trust the server's own is_open until then.
+  const kickedOff = left !== null && left <= 0;
   const open = Boolean(match?.is_open) && !kickedOff;
   const live = match ? !open && match.status !== "finished" : false;
-  const hasPick = match?.my_home !== null && match?.my_home !== undefined;
+  const serverPick =
+    match?.my_home !== null && match?.my_home !== undefined
+      ? ([match.my_home, match.my_away] as [number, number])
+      : null;
+
+  // Local wins until the server agrees, then they're the same value.
+  const pick = justPicked ?? serverPick;
+  const hasPick = pick !== null;
 
   const canPost = Boolean(result?.my_tier) && (result?.my_points ?? 0) > 0;
 
@@ -159,7 +190,7 @@ export function TournamentBlock({
     <>
       <section className="mb-3 overflow-hidden rounded-lg border border-amber-300 bg-amber-50">
       {/* --- what just finished ------------------------------------ */}
-      {result && result.my_tier && (
+      {result && (
         <div className="border-b border-amber-200 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -175,11 +206,17 @@ export function TournamentBlock({
                 {"\u2013"}
                 {result.away_score} {result.away_team}
               </Link>
-              <p className="mt-0.5 text-sm text-stone-700">
-                {HEADLINE[result.my_tier]} · you said {result.my_home}
-                {"\u2013"}
-                {result.my_away}
-              </p>
+              {result.my_tier ? (
+                <p className="mt-0.5 text-sm text-stone-700">
+                  {HEADLINE[result.my_tier]} · you said {result.my_home}
+                  {"\u2013"}
+                  {result.my_away}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-sm text-stone-600">
+                  You didn&apos;t predict this one.
+                </p>
+              )}
             </div>
 
             {(result.my_points ?? 0) > 0 && (
@@ -199,7 +236,7 @@ export function TournamentBlock({
             <span className="text-xs font-semibold uppercase tracking-wide text-amber-900">
               {live ? "Playing now" : "Next up"}
             </span>
-            {!live && !kickedOff && (
+            {!live && !kickedOff && left !== null && (
               <span className="text-xs font-medium tabular-nums text-amber-900">
                 {formatLeft(left)}
               </span>
@@ -228,16 +265,19 @@ export function TournamentBlock({
             <div className="mt-3">
               <PredictForm
                 match={match}
-                onDoneAction={() => setPicking(false)}
+                onDoneAction={(h, a) => {
+                  setJustPicked([h, a]);
+                  setPicking(false);
+                }}
               />
             </div>
           ) : (
             <div className="mt-2.5 flex flex-wrap items-center gap-2">
               {hasPick && (
                 <span className="rounded-full bg-stone-0 px-3 py-1.5 text-sm font-medium text-stone-900">
-                  You said {match.my_home}
+                  You said {pick[0]}
                   {"\u2013"}
-                  {match.my_away}
+                  {pick[1]}
                 </span>
               )}
 

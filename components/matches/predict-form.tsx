@@ -62,7 +62,10 @@ export function PredictForm({
   onDoneAction,
 }: {
   match: Match;
-  onDoneAction?: () => void;
+  /** Called with the saved values so the caller can show them straight
+   *  away — router.refresh() is a round trip, and a pick that takes a
+   *  beat to appear feels like it didn't register. */
+  onDoneAction?: (home: number, away: number) => void;
 }) {
   const router = useRouter();
   const [home, setHome] = useState(match.my_home ?? 1);
@@ -79,7 +82,8 @@ export function PredictForm({
     setError(null);
     try {
       await predict(createClient(), match.id, home, away);
-      onDoneAction?.();
+      // Tell the parent first, then reconcile with the server behind it.
+      onDoneAction?.(home, away);
       router.refresh();
     } catch (e) {
       // The raw message is shown while we're the ones testing. A

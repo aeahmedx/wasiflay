@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   cancelMatch,
   createMatch,
+  deleteMatch,
+  getDeleteImpact,
   getStaffMatches,
   kickoffLabel,
   lockMatch,
   ROUND_LABEL,
   setResult,
+  type DeleteImpact,
   type MatchRound,
   type StaffMatch,
 } from "@/lib/queries/predictions";
@@ -29,8 +33,9 @@ const input =
  * standing there when the whistle goes, and the leaderboard should move
  * while they're still looking at it.
  */
-export function MatchAdmin() {
+export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
 
   const [matches, setMatches] = useState<StaffMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +47,11 @@ export function MatchAdmin() {
   const [away, setAway] = useState("");
   const [kickoff, setKickoff] = useState("");
   const [round, setRound] = useState<MatchRound>("group");
+
+  // Delete confirmation, per match
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [impact, setImpact] = useState<DeleteImpact | null>(null);
+  const [typed, setTyped] = useState("");
 
   // Result entry, per match
   const [scoring, setScoring] = useState<string | null>(null);
@@ -81,6 +91,9 @@ export function MatchAdmin() {
       setKickoff("");
       setAdding(false);
       await load();
+      // Without this, tapping back lands on a cached home page that
+      // doesn't know the match exists.
+      router.refresh();
     } catch {
       setNotice("Couldn't add that match.");
     } finally {
@@ -93,6 +106,7 @@ export function MatchAdmin() {
     try {
       await lockMatch(supabase, id);
       await load();
+      router.refresh();
     } catch {
       setNotice("Couldn't lock it.");
     } finally {
@@ -115,6 +129,7 @@ export function MatchAdmin() {
       setHs("");
       setAs("");
       await load();
+      router.refresh();
       setNotice(
         scored === 1 ? "1 prediction scored." : `${scored} predictions scored.`
       );
@@ -125,11 +140,43 @@ export function MatchAdmin() {
     }
   }
 
+  async function startDelete(id: string) {
+    setDeleting(id);
+    setTyped("");
+    setImpact(null);
+    // Ask what it would cost before offering to do it.
+    setImpact(await getDeleteImpact(supabase, id));
+  }
+
+  async function confirmDelete(id: string) {
+    setBusy(id);
+    setNotice(null);
+    try {
+      await deleteMatch(supabase, id);
+      setDeleting(null);
+      setImpact(null);
+      setTyped("");
+      await load();
+      router.refresh();
+      setNotice("Match deleted.");
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      setNotice(
+        raw.includes("ADMIN_ONLY")
+          ? "Only an admin can delete a match."
+          : "Couldn't delete it."
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function cancel(id: string) {
     setBusy(id);
     try {
       await cancelMatch(supabase, id);
       await load();
+      router.refresh();
     } catch {
       setNotice("Couldn't cancel it.");
     } finally {
@@ -243,7 +290,84 @@ export function MatchAdmin() {
                 )}
               </div>
 
-              {scoring === m.id ? (
+              {deleting === m.id ? (
+                <div className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-3">
+                  <p className="text-sm font-medium text-stone-900">
+                    Delete {m.home_team} v {m.away_team}?
+                  </p>
+
+                  {impact === null ? (
+                    <p className="mt-1 text-sm text-stone-600">Checking…</p>
+                  ) : impact.prediction_count === 0 ? (
+                    <p className="mt-1 text-sm text-stone-700">
+                      Nobody predicted this one, so nothing else is affected.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-stone-700">
+                      This removes {impact.prediction_count}{" "}
+                      {impact.prediction_count === 1 ? "prediction" : "predictions"}{" "}
+                      from {impact.people_affected}{" "}
+                      {impact.people_affected === 1 ? "person" : "people"}
+                      {impact.points_awarded > 0 && (
+                        <> and takes back {impact.points_awarded} points</>
+                      )}
+                      . Their leaderboard positions will change. Cancelling
+                      hides the match instead and keeps all of that.
+                    </p>
+                  )}
+
+                  {impact !== null && impact.has_room && (
+                    <p className="mt-1 text-sm text-stone-600">
+                      The room stays — only the link to it goes.
+                    </p>
+                  )}
+
+                  {impact !== null && impact.prediction_count > 0 && (
+                    <>
+                      <label
+                        htmlFor={`del-${m.id}`}
+                        className="mt-2 block text-sm text-stone-800"
+                      >
+                        Type DELETE to confirm
+                      </label>
+                      <input
+                        id={`del-${m.id}`}
+                        value={typed}
+                        onChange={(e) => setTyped(e.target.value)}
+                        autoComplete="off"
+                        className="mt-1 w-full rounded-lg border border-stone-300 bg-stone-0 px-3 py-2 text-stone-900"
+                      />
+                    </>
+                  )}
+
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => confirmDelete(m.id)}
+                      disabled={
+                        busy === m.id ||
+                        impact === null ||
+                        (impact.prediction_count > 0 && typed !== "DELETE")
+                      }
+                      className="rounded-lg bg-red-800 px-3.5 py-2 text-sm font-medium text-stone-0 disabled:opacity-40"
+                    >
+                      {busy === m.id ? "Deleting…" : "Delete for good"}
+                    </button>
+                    <button
+                      onClick={() => cancel(m.id)}
+                      disabled={busy === m.id}
+                      className="rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-2 text-sm text-stone-800 disabled:opacity-40"
+                    >
+                      Just hide it
+                    </button>
+                    <button
+                      onClick={() => setDeleting(null)}
+                      className="rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-2 text-sm text-stone-700"
+                    >
+                      Keep it
+                    </button>
+                  </div>
+                </div>
+              ) : scoring === m.id ? (
                 <div className="mt-3">
                   <div className="flex items-center gap-2">
                     <input
@@ -305,14 +429,24 @@ export function MatchAdmin() {
                     {m.status === "finished" ? "Fix result" : "Enter result"}
                   </button>
 
-                  {m.prediction_count === 0 && (
+                  {isAdmin ? (
                     <button
-                      onClick={() => cancel(m.id)}
+                      onClick={() => startDelete(m.id)}
                       disabled={busy === m.id}
                       className="rounded-lg border border-red-300 px-3.5 py-2 text-sm text-red-800 disabled:opacity-40"
                     >
-                      Cancel match
+                      Delete
                     </button>
+                  ) : (
+                    m.prediction_count === 0 && (
+                      <button
+                        onClick={() => cancel(m.id)}
+                        disabled={busy === m.id}
+                        className="rounded-lg border border-red-300 px-3.5 py-2 text-sm text-red-800 disabled:opacity-40"
+                      >
+                        Hide match
+                      </button>
+                    )
                   )}
                 </div>
               )}

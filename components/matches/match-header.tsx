@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -25,12 +25,17 @@ export function MatchHeader({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [picking, setPicking] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
+  // Server snapshot is null, so the server never renders a time — see
+  // the note in tournament-block.tsx.
+  const now = useSyncExternalStore(
+    (onTick) => {
+      const timer = setInterval(onTick, 1000);
+      return () => clearInterval(timer);
+    },
+    () => Date.now(),
+    () => null
+  );
 
   useEffect(() => {
     const channel = supabase
@@ -52,10 +57,17 @@ export function MatchHeader({
     };
   }, [supabase, match.id, router]);
 
-  const kickedOff = new Date(match.kicks_off_at).getTime() - now <= 0;
+  const kickedOff =
+    now !== null && new Date(match.kicks_off_at).getTime() - now <= 0;
   const open = match.is_open && !kickedOff;
   const finished = match.status === "finished";
-  const hasPick = match.my_home !== null;
+  const serverPick =
+    match.my_home !== null
+      ? ([match.my_home, match.my_away] as [number, number])
+      : null;
+  // Shown immediately on save; the refresh behind it confirms.
+  const pick = justPicked ?? serverPick;
+  const hasPick = pick !== null;
 
   return (
     <section className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">
@@ -78,15 +90,21 @@ export function MatchHeader({
 
       {picking && userId ? (
         <div className="mt-3">
-          <PredictForm match={match} onDoneAction={() => setPicking(false)} />
+          <PredictForm
+            match={match}
+            onDoneAction={(hs, as_) => {
+              setJustPicked([hs, as_]);
+              setPicking(false);
+            }}
+          />
         </div>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {hasPick && (
             <span className="rounded-full bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-900">
-              You said {match.my_home}
+              You said {pick[0]}
               {"\u2013"}
-              {match.my_away}
+              {pick[1]}
             </span>
           )}
 

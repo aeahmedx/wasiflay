@@ -88,7 +88,7 @@ export default async function ModPage({
           {onUsers ? (
             <UserSearch isAdmin={isAdmin} viewerId={profile.id} />
           ) : onMatches ? (
-            <MatchAdmin />
+            <MatchAdmin isAdmin={isAdmin} />
           ) : onEvents ? (
             <EventReview />
           ) : onRemoved ? (

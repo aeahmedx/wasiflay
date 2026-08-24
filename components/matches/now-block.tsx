@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import {
   getCurrentMatch,
-  getMyLatestResult,
+  getLatestResult,
   getMyStanding,
 } from "@/lib/queries/predictions";
 import { TournamentBlock } from "@/components/matches/tournament-block";
@@ -19,7 +19,9 @@ export async function NowBlock({ userId }: { userId: string | null }) {
 
   const [match, result] = await Promise.all([
     getCurrentMatch(supabase),
-    userId ? getMyLatestResult(supabase) : Promise.resolve(null),
+    // Not gated on being signed in: a result is news either way, and
+    // someone signed out seeing the scoreboard is the point.
+    getLatestResult(supabase),
   ]);
 
   if (!match && !result) return null;

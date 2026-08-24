@@ -68,7 +68,7 @@ export default async function MatchesPage() {
                 <ul className="space-y-2">
                   {playing.map((m) => (
                     <li key={m.id}>
-                      <MatchRow match={m} />
+                      <MatchRow match={m} userId={profile?.id ?? null} />
                     </li>
                   ))}
                 </ul>
@@ -83,7 +83,7 @@ export default async function MatchesPage() {
                 <ul className="space-y-2">
                   {upcoming.map((m) => (
                     <li key={m.id}>
-                      <MatchRow match={m} />
+                      <MatchRow match={m} userId={profile?.id ?? null} />
                     </li>
                   ))}
                 </ul>
@@ -98,7 +98,7 @@ export default async function MatchesPage() {
                 <ul className="space-y-2">
                   {results.map((m) => (
                     <li key={m.id}>
-                      <MatchRow match={m} />
+                      <MatchRow match={m} userId={profile?.id ?? null} />
                     </li>
                   ))}
                 </ul>

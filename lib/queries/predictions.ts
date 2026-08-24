@@ -83,7 +83,10 @@ export async function getMatch(
 export async function getCurrentMatch(
   client: SupabaseClient
 ): Promise<Match | null> {
-  const since = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+  // Six hours, not three: a match that kicked off and hasn't had a
+  // result entered should stay visible rather than quietly vanishing —
+  // that gap is exactly when someone would go looking for it.
+  const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
   const { data, error } = await client
     .from("public_matches")
@@ -99,13 +102,17 @@ export async function getCurrentMatch(
 }
 
 /**
- * The last match you predicted that has since finished — the payoff for
- * having made a pick.
+ * The most recent finished match.
  *
- * Windowed to twelve hours so it's news rather than history. Yesterday's
- * result at the top of the app is clutter.
+ * Deliberately NOT limited to matches you predicted. The first version
+ * was, which meant entering a result for a match you hadn't picked left
+ * the block with nothing to show and no next match either — an empty
+ * card. A result is news whether or not you had money on it; the points
+ * line simply doesn't appear when there's no pick.
+ *
+ * Windowed to twelve hours so it stays news rather than history.
  */
-export async function getMyLatestResult(
+export async function getLatestResult(
   client: SupabaseClient
 ): Promise<Match | null> {
   const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
@@ -114,7 +121,6 @@ export async function getMyLatestResult(
     .from("public_matches")
     .select(MATCH_FIELDS)
     .eq("status", "finished")
-    .not("my_tier", "is", null)
     .gte("kicks_off_at", since)
     .order("kicks_off_at", { ascending: false })
     .limit(1)
@@ -351,3 +357,38 @@ export const TIER_LABEL: Record<string, string> = {
   goals: "Right total goals",
   none: "No points",
 };
+
+
+export type DeleteImpact = {
+  prediction_count: number;
+  points_awarded: number;
+  people_affected: number;
+  has_room: boolean;
+};
+
+/** What a delete would cost, so it can be said before it happens. */
+export async function getDeleteImpact(
+  client: SupabaseClient,
+  matchId: string
+): Promise<DeleteImpact | null> {
+  const { data, error } = await client.rpc("match_delete_impact", {
+    p_match: matchId,
+  });
+  if (error) return null;
+  const rows = (data ?? []) as DeleteImpact[];
+  return rows[0] ?? null;
+}
+
+/**
+ * Removes the match and every prediction on it. Admin only — this
+ * changes other people's scores, which staff shouldn't be able to do
+ * with one tap. Cancelling is the usual answer; this is for a match
+ * entered by mistake.
+ */
+export async function deleteMatch(
+  client: SupabaseClient,
+  matchId: string
+): Promise<void> {
+  const { error } = await client.rpc("delete_match", { p_match: matchId });
+  if (error) throw error;
+}
