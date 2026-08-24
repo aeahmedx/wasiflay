@@ -98,6 +98,32 @@ export async function getCurrentMatch(
   return data as unknown as Match | null;
 }
 
+/**
+ * The last match you predicted that has since finished — the payoff for
+ * having made a pick.
+ *
+ * Windowed to twelve hours so it's news rather than history. Yesterday's
+ * result at the top of the app is clutter.
+ */
+export async function getMyLatestResult(
+  client: SupabaseClient
+): Promise<Match | null> {
+  const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .eq("status", "finished")
+    .not("my_tier", "is", null)
+    .gte("kicks_off_at", since)
+    .order("kicks_off_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data as unknown as Match | null;
+}
+
 export type PublicPrediction = {
   match_id: string;
   user_id: string;
@@ -134,19 +160,28 @@ export async function getMatchPredictions(
 
 export class MatchClosedError extends Error {}
 
+/**
+ * Goes through an RPC rather than an upsert.
+ *
+ * An upsert compiles to INSERT ... ON CONFLICT DO UPDATE, and Postgres
+ * requires UPDATE privilege on every column in the SET list at plan
+ * time — including match_id and user_id, which a client has no business
+ * changing. The RPC keeps the privilege in one place.
+ *
+ * userId is no longer needed: the function reads auth.uid(), so a
+ * client can't write a prediction for someone else even by asking.
+ */
 export async function predict(
   client: SupabaseClient,
   matchId: string,
-  userId: string,
   home: number,
   away: number
 ): Promise<void> {
-  const { error } = await client
-    .from("predictions")
-    .upsert(
-      { match_id: matchId, user_id: userId, home_score: home, away_score: away },
-      { onConflict: "match_id,user_id" }
-    );
+  const { error } = await client.rpc("make_prediction", {
+    p_match: matchId,
+    p_home: home,
+    p_away: away,
+  });
 
   if (error) {
     if (error.message.includes("MATCH_CLOSED")) {

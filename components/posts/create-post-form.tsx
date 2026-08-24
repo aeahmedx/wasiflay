@@ -27,6 +27,7 @@ export function CreatePostForm({
   regions,
   initialTitle = "",
   eventId = null,
+  initialType,
 }: {
   userId: string;
   regions: Region[];
@@ -41,10 +42,13 @@ export function CreatePostForm({
   /** Set when the question came from an event page, so the answer lands
    *  back on that event rather than scattering into the general feed. */
   eventId?: string | null;
+  /** Set when the link knows what kind of post this is — a result brag
+   *  opens as an announcement rather than as a question. */
+  initialType?: PostType;
 }) {
   const router = useRouter();
 
-  const [type, setType] = useState<PostType>("question");
+  const [type, setType] = useState<PostType>(initialType ?? "question");
   const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState("");
   // Defaults to every region on purpose. Early on, a post scattered into
@@ -97,7 +101,7 @@ export function CreatePostForm({
   }
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
         {/* router.back(), so it returns wherever you came from — the feed,
             a search, a zero-result screen. Submitting uses replace, so

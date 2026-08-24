@@ -8,9 +8,9 @@ import { BackLink } from "@/components/back-link";
 export default async function CreatePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; event?: string }>;
+  searchParams: Promise<{ q?: string; event?: string; type?: string }>;
 }) {
-  const { q, event } = await searchParams;
+  const { q, event, type } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,7 +33,7 @@ export default async function CreatePage({
   // and get a generic failure on submit. Say it before they type.
   if (profile?.is_banned) {
     return (
-      <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+      <main className="min-h-dvh bg-stone-50 px-4 py-6">
         <div className="max-w-md mx-auto">
           <BackLink />
           <div className="mt-6 rounded-lg border border-stone-200 bg-stone-0 px-4 py-6">
@@ -56,6 +56,9 @@ export default async function CreatePage({
       regions={regions}
       initialTitle={(q ?? "").slice(0, 200)}
       eventId={event ?? null}
+      initialType={
+        type === "recommendation" || type === "announcement" ? type : undefined
+      }
     />
   );
 }
