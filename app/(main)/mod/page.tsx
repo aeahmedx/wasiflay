@@ -5,6 +5,8 @@ import { ReportQueue } from "@/components/mod/report-queue";
 import { UserSearch } from "@/components/mod/user-search";
 import { RemovedContent } from "@/components/mod/removed-content";
 import { KillSwitch } from "@/components/mod/kill-switch";
+import { GateControls } from "@/components/mod/gate-controls";
+import { getGateState } from "@/lib/queries/gate";
 import { EventReview } from "@/components/mod/event-review";
 import { MatchAdmin } from "@/components/mod/match-admin";
 import { getPendingEventCount } from "@/lib/queries/events";
@@ -35,6 +37,9 @@ export default async function ModPage({
   const onEvents = view === "events";
   const onMatches = view === "matches";
   const isAdmin = profile.role === "admin";
+
+  // Only an admin can change the gate, so only an admin needs its state.
+  const gate = isAdmin ? await getGateState(supabase) : null;
 
   return (
     <main className="min-h-dvh bg-stone-50 px-4 py-6">
@@ -98,8 +103,14 @@ export default async function ModPage({
           )}
         </ErrorBoundary>
 
-        {isAdmin && (
+        {isAdmin && gate && (
           <div className="mt-8 border-t border-stone-200 pt-6">
+            <GateControls initial={gate} />
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="mt-6 border-t border-stone-200 pt-6">
             <KillSwitch
               initialReadOnly={settings.read_only}
               initialNotice={settings.notice}

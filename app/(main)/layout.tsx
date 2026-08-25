@@ -13,6 +13,7 @@ import { ReadOnlyBanner } from "@/components/read-only-banner";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SessionWatch } from "@/components/session-watch";
 import { ConnectionStatus } from "@/components/connection-status";
+import { shouldShowGate } from "@/lib/gate-guard";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -38,11 +39,27 @@ export default async function MainLayout({
     if (!hasProfile) redirect("/onboarding");
   }
 
+  /**
+   * The gate, before anything else renders.
+   *
+   * Everything in this route group funnels through here, so one check
+   * covers the feed, rooms, search, events and profiles — rather than
+   * each page remembering to ask. The gate page itself sits outside
+   * this group, as do the legal pages: being asked to accept terms you
+   * cannot open would be absurd.
+   */
+  const gateProfile = user ? await getCurrentProfile() : null;
+  const isStaff =
+    gateProfile?.role === "moderator" || gateProfile?.role === "admin";
+
+  const { blocked } = await shouldShowGate(supabase, isStaff);
+  if (blocked) redirect("/gate");
+
   // Seeded server-side so the badge never flashes a wrong number; the
   // bar keeps it current over realtime from there.
   const unread = user ? await getUnreadCount(supabase) : 0;
 
-  const profile = user ? await getCurrentProfile() : null;
+  const profile = gateProfile;
   const needsTerms =
     profile !== null && profile.terms_version !== TERMS_VERSION;
 

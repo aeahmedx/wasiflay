@@ -66,13 +66,28 @@ export function useCountdown(iso: string | null): number | null {
   return new Date(iso).getTime() - now;
 }
 
+/**
+ * A countdown in the units a person would actually use.
+ *
+ * Days appear once there are any, and disappear the moment there
+ * aren't. "246h" is technically correct and reads as a machine talking:
+ * nobody counts a week in hours, and a number that large stops feeling
+ * like a real amount of time at all.
+ *
+ * Seconds only show under an hour, where they're the thing that makes a
+ * countdown feel live rather than a number that never moves.
+ */
 export function formatCountdown(ms: number): string {
   if (ms <= 0) return "any moment";
+
   const total = Math.floor(ms / 1000);
-  const hours = Math.floor(total / 3600);
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const seconds = total % 60;
-  if (hours > 0) return `${hours}h ${minutes}m`;
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
 }
