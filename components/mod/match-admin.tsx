@@ -14,8 +14,10 @@ import {
   unlockMatch,
   ROUND_LABEL,
   setResult,
+  setRoomChat,
   updateMatch,
   type DeleteImpact,
+  type ChatOverride,
   type MatchRound,
   type StaffMatch,
 } from "@/lib/queries/predictions";
@@ -243,6 +245,38 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
     }
   }
 
+  /**
+   * Chat opens at kickoff and closes on a result by itself. This is the
+   * override for when it needs to be otherwise — and "Auto" hands it
+   * back rather than leaving a moderator to work out which way the
+   * clock would have gone.
+   */
+  async function chat(m: StaffMatch, state: ChatOverride) {
+    setBusy(m.id);
+    setNotice(null);
+    try {
+      const now = await setRoomChat(supabase, m.id, state);
+      await load();
+      router.refresh();
+      setNotice(
+        state === null
+          ? `Chat follows the match again — currently ${now}.`
+          : state === "closed"
+          ? "Chat paused. People can still read."
+          : "Chat opened early."
+      );
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : "";
+      setNotice(
+        raw.includes("NO_ROOM")
+          ? "This match has no room."
+          : "Couldn't change the chat."
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function cancel(id: string) {
     setBusy(id);
     try {
@@ -349,6 +383,21 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
                     {kickoffLabel(m.kicks_off_at)} · {ROUND_LABEL[m.round]} ·{" "}
                     {m.prediction_count}{" "}
                     {m.prediction_count === 1 ? "pick" : "picks"}
+                    {m.chat_state && (
+                      <>
+                        {" · chat "}
+                        <span
+                          className={
+                            m.chat_state === "open"
+                              ? "font-medium text-emerald-800"
+                              : "text-stone-500"
+                          }
+                        >
+                          {m.chat_state}
+                          {m.chat_override ? " (manual)" : ""}
+                        </span>
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -558,6 +607,52 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
                         ? "Lock"
                         : "Unlock"}
                     </button>
+                  )}
+
+                  {m.room_id && (
+                    <span className="flex items-center gap-1 rounded-lg border border-stone-300 px-1 py-1">
+                      <span className="px-1.5 text-xs font-medium text-stone-500">
+                        Chat
+                      </span>
+
+                      {m.chat_override === "closed" ? (
+                        <button
+                          onClick={() => chat(m, null)}
+                          disabled={busy === m.id}
+                          className="rounded bg-emerald-800 px-2.5 py-1 text-xs font-semibold text-stone-0 disabled:opacity-40"
+                        >
+                          Resume
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => chat(m, "closed")}
+                          disabled={busy === m.id}
+                          className="rounded px-2.5 py-1 text-xs font-medium text-stone-700 disabled:opacity-40"
+                        >
+                          Pause
+                        </button>
+                      )}
+
+                      {m.chat_override === "open" ? (
+                        <button
+                          onClick={() => chat(m, null)}
+                          disabled={busy === m.id}
+                          className="rounded bg-amber-400 px-2.5 py-1 text-xs font-semibold text-on-brand disabled:opacity-40"
+                        >
+                          Auto
+                        </button>
+                      ) : (
+                        m.chat_state === "waiting" && (
+                          <button
+                            onClick={() => chat(m, "open")}
+                            disabled={busy === m.id}
+                            className="rounded px-2.5 py-1 text-xs font-medium text-stone-700 disabled:opacity-40"
+                          >
+                            Open now
+                          </button>
+                        )
+                      )}
+                    </span>
                   )}
 
                   {m.status !== "finished" && (

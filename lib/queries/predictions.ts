@@ -318,6 +318,8 @@ export async function getMyStanding(
 
 // ---- staff ------------------------------------------------------------
 
+export type ChatOverride = "open" | "closed" | null;
+
 export type StaffMatch = {
   id: string;
   home_team: string;
@@ -331,6 +333,10 @@ export type StaffMatch = {
   room_id: string | null;
   room_slug: string | null;
   prediction_count: number;
+  /** What the room's chat is doing right now. */
+  chat_state: "waiting" | "open" | "closed" | "expired" | null;
+  /** Set when a moderator has overridden the clock. */
+  chat_override: ChatOverride;
 };
 
 export async function getStaffMatches(
@@ -571,4 +577,26 @@ export async function getPickSummary(
   if (error) return null;
   const rows = (data ?? []) as PickSummary[];
   return rows[0] ?? null;
+}
+
+
+/**
+ * Force a match room open or closed, or hand it back to the clock.
+ *
+ * Chat opens at kickoff and closes on a result on its own — this is the
+ * contingency for the moderator standing there watching something go
+ * wrong, not the mechanism. Passing null restores automatic behaviour
+ * without anyone having to work out what that would be.
+ */
+export async function setRoomChat(
+  client: SupabaseClient,
+  matchId: string,
+  state: ChatOverride
+): Promise<string> {
+  const { data, error } = await client.rpc("set_room_chat", {
+    p_match: matchId,
+    p_state: state,
+  });
+  if (error) throw error;
+  return (data as string) ?? "";
 }

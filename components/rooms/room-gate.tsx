@@ -1,29 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { Room } from "@/lib/queries/messages";
 import type { NextFixture } from "@/lib/queries/room-match";
 
+/** How often to keep asking, once the clock has passed kickoff. */
+const RECHECK_MS = 4000;
+
 /**
  * What sits where the message box would be, when a match room isn't
  * open for posting.
  *
  * Deliberately in that exact spot rather than as a banner up top. The
- * composer is where someone's thumb goes and where their eye lands when
- * they want to say something — an explanation anywhere else is an
- * explanation they'll never read, and they'll conclude the app is
- * broken instead.
- *
- * Two cases:
- *
- *   waiting  a countdown to kickoff, and somewhere to go meanwhile
- *   closed   the final score, and the next fixture
- *
- * The database enforces both through the insert policy — this only
- * explains what it's already doing.
+ * composer is where a thumb goes and where the eye lands when someone
+ * wants to say something — an explanation anywhere else is one they'll
+ * never read, and they'll conclude the app is broken instead.
  */
 export function RoomGate({
   room,
@@ -34,54 +28,69 @@ export function RoomGate({
 }) {
   const router = useRouter();
   const left = useCountdown(room.match_kicks_off_at);
-  const opened = useRef(false);
 
   /**
-   * Kickoff fires no database event — the room goes from waiting to
-   * open because time moved, and nothing in any table changes. So
-   * LiveRefresh hears nothing, and without this someone watching the
-   * countdown would sit past zero staring at a locked composer.
+   * Kickoff fires no database event — the room opens because time moved,
+   * and nothing in any table changes. So nothing is listening, and this
+   * has to notice for itself.
    *
-   * The countdown already knows. A ref rather than state so the refresh
-   * happens once and doesn't loop.
+   * The first attempt at this depended on the countdown value, which
+   * changes every second: each tick re-ran the effect, the cleanup
+   * cancelled the pending refresh, and a guard stopped it rescheduling.
+   * It never fired once. Hence "Starting…" forever.
+   *
+   * This depends only on the kickoff time and the state, both stable —
+   * so it schedules once. And it keeps rechecking rather than trying
+   * once, because the server's clock may reach kickoff a moment after
+   * the browser's, and a single early attempt would come back
+   * "waiting" and give up.
    */
   useEffect(() => {
-    if (room.chat_state !== "waiting") return;
-    if (left === null || left > 0) return;
-    if (opened.current) return;
+    if (room.chat_state !== "waiting" || !room.match_kicks_off_at) return;
 
-    opened.current = true;
-    // A beat of slack, so the server's clock has certainly passed
-    // kickoff too — otherwise it refreshes and gets 'waiting' back.
-    const timer = setTimeout(() => router.refresh(), 1200);
-    return () => clearTimeout(timer);
-  }, [left, room.chat_state, router]);
+    const until = new Date(room.match_kicks_off_at).getTime() - Date.now();
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    // A second of slack so the server has certainly passed kickoff too.
+    const first = setTimeout(() => {
+      router.refresh();
+      interval = setInterval(() => router.refresh(), RECHECK_MS);
+    }, Math.max(until + 1000, 0));
+
+    return () => {
+      clearTimeout(first);
+      if (interval) clearInterval(interval);
+    };
+    // Stable deps on purpose — see above.
+  }, [room.chat_state, room.match_kicks_off_at, router]);
 
   if (room.chat_state === "waiting") {
+    const starting = left !== null && left <= 0;
+
     return (
       <div
         className="shrink-0 border-t border-stone-200 bg-stone-0 px-4 py-4 text-center"
-        style={{
-          paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
-        }}
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
         <p className="text-sm font-semibold text-stone-900">
-          Chat opens at kickoff
+          {starting ? "Kicking off" : "Chat opens at kickoff"}
         </p>
 
         <p className="mt-1 text-2xl font-bold tabular-nums text-amber-600">
           {left === null
             ? "\u00a0"
-            : left <= 0
-            ? "Starting…"
+            : starting
+            ? "Opening…"
             : formatCountdown(left)}
         </p>
 
         <p className="mt-1.5 text-sm text-stone-600">
-          Come back when it starts. Get your score in before then.
+          {starting
+            ? "One moment."
+            : "Come back when it starts. Get your score in before then."}
         </p>
 
-        {room.match_id && (
+        {!starting && room.match_id && (
           <Link
             href={`/matches/${room.match_id}`}
             className="mt-3 inline-block rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-on-brand"
@@ -97,12 +106,10 @@ export function RoomGate({
   return (
     <div
       className="shrink-0 border-t border-stone-200 bg-stone-100 px-4 py-4 text-center"
-      style={{
-        paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
-      }}
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
     >
       <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-        Full time
+        {room.match_status === "finished" ? "Full time" : "Chat paused"}
       </p>
 
       {room.match_home_score !== null && room.match_away_score !== null ? (
@@ -113,7 +120,9 @@ export function RoomGate({
         </p>
       ) : (
         <p className="mt-0.5 text-lg font-semibold text-stone-900">
-          This one is over
+          {room.match_status === "finished"
+            ? "This one is over"
+            : "Paused by a moderator"}
         </p>
       )}
 

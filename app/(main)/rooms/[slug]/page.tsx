@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { blockedIds } from "@/lib/queries/safety";
 import { getNextFixture } from "@/lib/queries/room-match";
 import { LiveRefresh } from "@/components/live-refresh";
+import { ChatStateWatch } from "@/components/rooms/chat-state-watch";
 import { RoomView } from "@/components/rooms/room-view";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -48,9 +49,16 @@ export default async function RoomPage({
         conversation the database has already shut.
       */}
       {room.match_id && (
-        <LiveRefresh
-          watch={[{ table: "matches", filter: `id=eq.${room.match_id}` }]}
-        />
+        <>
+          {/* Fast path: the match row changing reaches everyone at once. */}
+          <LiveRefresh
+            watch={[{ table: "matches", filter: `id=eq.${room.match_id}` }]}
+          />
+
+          {/* Certain path: kickoff has no event at all, and realtime is
+              not something to bet a room full of people on. */}
+          <ChatStateWatch roomId={room.id} current={room.chat_state} />
+        </>
       )}
 
       <RoomView
