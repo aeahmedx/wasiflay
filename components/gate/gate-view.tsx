@@ -152,7 +152,7 @@ export function GateView({
 
         {/* Below the wordmark: it reads as a credit line, and a credit
             line goes under the name it credits. */}
-        <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-on-brand opacity-70">
+        <p className="mt-0.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-on-brand opacity-70">
           presents
         </p>
 
