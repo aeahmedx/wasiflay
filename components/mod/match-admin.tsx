@@ -121,7 +121,7 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
         await lockMatch(supabase, m.id);
         // Locking opens the room in the same action — worth saying, so
         // nobody goes looking for a second button.
-        setNotice("Picks closed. The room is open.");
+        setNotice("Picks closed. The match is live.");
       } else {
         await unlockMatch(supabase, m.id);
         setNotice("Picks reopened. Move the kickoff time if it slipped.");
@@ -260,9 +260,10 @@ export function MatchAdmin({ isAdmin = false }: { isAdmin?: boolean }) {
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-xs leading-relaxed text-stone-500">
-          Lock when the ball actually moves, not when the schedule said.
-          Unlock if kickoff slips — you&apos;ll need to move the time too.
-          Enter the result the moment it ends.
+          Every match gets its own room the moment you add it. Lock when
+          the ball actually moves, not when the schedule said. Unlock if
+          kickoff slips — move the time too. Enter the result the moment
+          it ends and the room closes itself.
         </p>
         <button
           onClick={() => setAdding((v) => !v)}

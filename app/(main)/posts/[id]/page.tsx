@@ -13,6 +13,7 @@ import { relativeTime } from "@/components/posts/post-card";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BackLink } from "@/components/back-link";
 import { ShareButton } from "@/components/share-button";
+import { LiveRefresh } from "@/components/live-refresh";
 import { ReportButton } from "@/components/report-button";
 import { AdminDeleteButton } from "@/components/mod/admin-delete-button";
 import { DeleteOwnButton } from "@/components/posts/delete-own-button";
@@ -61,6 +62,16 @@ export default async function PostPage({
   return (
     <div className="min-h-dvh bg-stone-50 flex flex-col">
       <div className="flex-1 max-w-md w-full mx-auto px-4 pt-5 pb-6">
+        {/* A moderator removing this post, or an answer being edited or
+            deleted, has to reach whoever is reading it — not wait for
+            them to navigate away and back. */}
+        <LiveRefresh
+          watch={[
+            { table: "posts", filter: `id=eq.${post.id}` },
+            { table: "answers", filter: `post_id=eq.${post.id}` },
+          ]}
+        />
+
         <BackLink />
 
         <article className="mt-4 rounded-lg border border-stone-200 bg-stone-0 px-4 py-4">

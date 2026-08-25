@@ -185,6 +185,32 @@ export function useRoomMessages(
             }
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "messages",
+            filter: `room_id=eq.${roomId}`,
+          },
+          (payload) => {
+            /**
+             * Permanent deletion is a DELETE, not an UPDATE — a
+             * different event entirely from a moderator's soft remove.
+             * Without this handler, admin_hard_delete cleared the row
+             * from the database and left it on every screen until
+             * someone reloaded.
+             *
+             * The old row carries the id because messages were set to
+             * replica identity full in 0007; with the default identity
+             * this payload would be empty and there would be nothing to
+             * match on.
+             */
+            const gone = payload.old as { id?: string };
+            if (!gone?.id) return;
+            setMessages((current) => current.filter((m) => m.id !== gone.id));
+          }
+        )
         .subscribe((status) => {
           if (cancelled) return;
 

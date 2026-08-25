@@ -1,147 +1,112 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { callGoal, getGoalBurst, TooSoonError } from "@/lib/queries/predictions";
+import { useEffect, useRef, useState } from "react";
 import { announceIfOffline } from "@/lib/offline";
 
-/** Matches the window in goal_burst(). */
-const WINDOW_MS = 45_000;
+/** Long enough to feel like something happened, short enough not to
+ *  sit on top of the conversation. */
+const CONFETTI_MS = 1400;
+
+/** Stops a held finger firing ten in a row without policing enthusiasm. */
+const COOLDOWN_MS = 2500;
+
+const COLOURS = ["#f5a623", "#46300c", "#0f7b4f", "#e8c98a", "#ffffff"];
 
 /**
  * GOAL.
  *
- * Deliberately not a score. It reports that people reacted — "14 said
- * GOAL" — and claims nothing about what the scoreline is.
+ * Sends a message. That's the whole design.
  *
- * A crowd-voted score would be gamed by whoever is loudest in the room,
- * would drift once people stopped bothering to tap, and would end up
- * contradicting the official result in front of everyone. This has all
- * the energy and none of the false authority: it cannot be wrong,
- * because it asserts nothing.
+ * The first version kept its own table and showed a live count of how
+ * many people had tapped, which needed a time window, a rate limit, and
+ * a rule for what the number meant — three things to tune and a number
+ * that could be wrong in front of everyone.
+ *
+ * A message inherits everything that already works here: moderation,
+ * blocking, rate limiting, realtime delivery, the offline queue,
+ * ordering. Nothing new to get right. And it cannot be wrong, because
+ * it is not claiming anything about the score — someone said GOAL, and
+ * there it is in the conversation with their name on it.
+ *
+ * The confetti is local and purely for the person who tapped. Everyone
+ * else just sees the message, which is the honest version of what
+ * happened.
  */
 export function GoalButton({
-  roomId,
+  onGoalAction,
   canPost,
 }: {
-  roomId: string;
+  /** Sends the message. Reuses the room's own send path, so a failed
+   *  send queues and retries exactly like any other message. */
+  onGoalAction: (body: string) => void;
   canPost: boolean;
 }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [burst, setBurst] = useState(0);
-  const [mine, setMine] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-  const fade = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const refresh = useCallback(async () => {
-    setBurst(await getGoalBurst(supabase, roomId));
-  }, [supabase, roomId]);
-
-  useEffect(() => {
-    let debounce: ReturnType<typeof setTimeout> | null = null;
-
-    const channel = supabase
-      .channel(`goals:${roomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "goal_calls",
-          filter: `room_id=eq.${roomId}`,
-        },
-        () => {
-          // A burst is many inserts in a second or two; one refetch is
-          // enough and keeps the count honest rather than guessed.
-          if (debounce) clearTimeout(debounce);
-          debounce = setTimeout(() => void refresh(), 400);
-        }
-      )
-      .subscribe();
-
-    // Deferred rather than called straight from the effect body: an
-    // update kicked off during the effect costs an extra render pass
-    // before paint, and this number is never urgent enough to warrant
-    // one.
-    const first = setTimeout(() => void refresh(), 0);
-
-    // The window slides, so the count has to fall on its own once
-    // people stop — otherwise a burst from ten minutes ago sits there
-    // looking live.
-    const tick = setInterval(() => void refresh(), 15_000);
-
-    return () => {
-      if (debounce) clearTimeout(debounce);
-      clearTimeout(first);
-      clearInterval(tick);
-      void supabase.removeChannel(channel);
-    };
-  }, [supabase, roomId, refresh]);
+  const [bursting, setBursting] = useState(false);
+  const [cooling, setCooling] = useState(false);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coolTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
-      if (fade.current) clearTimeout(fade.current);
+      if (burstTimer.current) clearTimeout(burstTimer.current);
+      if (coolTimer.current) clearTimeout(coolTimer.current);
     };
   }, []);
 
-  async function shout() {
-    if (!canPost) return;
+  if (!canPost) return null;
+
+  function shout() {
+    if (cooling) return;
     if (announceIfOffline()) return;
 
-    // Optimistic: the tap should land before the round trip.
-    setMine(true);
-    setBurst((b) => b + 1);
-    setNote(null);
+    onGoalAction("⚽ GOAL");
 
-    if (fade.current) clearTimeout(fade.current);
-    fade.current = setTimeout(() => setMine(false), WINDOW_MS);
+    setBursting(true);
+    setCooling(true);
 
-    try {
-      const count = await callGoal(supabase, roomId);
-      setBurst(count);
-    } catch (e) {
-      setMine(false);
-      setBurst((b) => Math.max(0, b - 1));
-      setNote(
-        e instanceof TooSoonError ? "Already counted you" : "Didn't register"
-      );
-      setTimeout(() => setNote(null), 2000);
-    }
-  }
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    burstTimer.current = setTimeout(() => setBursting(false), CONFETTI_MS);
 
-  if (!canPost) {
-    // Still worth seeing the room react, even if you can't join in.
-    return burst > 1 ? (
-      <div className="px-4 pb-2 text-center text-sm font-medium text-amber-900">
-        {burst} said GOAL
-      </div>
-    ) : null;
+    if (coolTimer.current) clearTimeout(coolTimer.current);
+    coolTimer.current = setTimeout(() => setCooling(false), COOLDOWN_MS);
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 pb-2">
+    <div className="relative px-3 pb-2">
       <button
         type="button"
         onClick={shout}
+        disabled={cooling}
         aria-label="Shout goal"
-        className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-bold tracking-wide transition ${
-          mine
-            ? "bg-emerald-800 text-stone-0"
-            : "bg-amber-400 text-on-brand active:scale-95"
+        className={`w-full rounded-lg bg-amber-400 py-2 text-sm font-bold tracking-widest text-on-brand transition active:scale-[0.98] ${
+          cooling ? "opacity-50" : ""
         }`}
       >
-        GOAL
+        ⚽ GOAL
       </button>
 
-      {/* Only once it's a crowd. One person tapping isn't news, and
-          showing "1 said GOAL" makes the room look empty. */}
-      {burst > 1 && (
-        <span className="text-sm font-medium text-amber-900">
-          {burst} said GOAL
-        </span>
+      {bursting && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-40 overflow-hidden"
+        >
+          {Array.from({ length: 18 }).map((_, i) => (
+            <span
+              key={i}
+              className="absolute block h-2 w-2 rounded-[1px]"
+              style={{
+                left: `${(i * 5.5 + 6) % 96}%`,
+                bottom: 0,
+                background: COLOURS[i % COLOURS.length],
+                // Staggered so it reads as a burst rather than a row.
+                animation: `wl-confetti ${900 + (i % 5) * 140}ms ease-out ${
+                  (i % 6) * 45
+                }ms forwards`,
+              }}
+            />
+          ))}
+        </div>
       )}
-
-      {note && <span className="text-sm text-stone-500">{note}</span>}
     </div>
   );
 }

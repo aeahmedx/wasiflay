@@ -7,6 +7,7 @@ import {
   ROUND_LABEL,
   type Match,
 } from "@/lib/queries/predictions";
+import { useNow } from "@/lib/hooks/use-now";
 import { PredictForm } from "@/components/matches/predict-form";
 import { railClass, TIER_LABEL, TIER_STYLE } from "@/components/matches/tier";
 
@@ -36,8 +37,20 @@ export function MatchRow({
   const [picking, setPicking] = useState(false);
   const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
 
+  /**
+   * is_open is computed when the page renders, so a Predict chip sat
+   * there after kickoff until someone refreshed. The write was refused
+   * server-side either way, but a button that fails on tap reads as
+   * broken rather than as too late. Null on the server, so the server's
+   * own answer stands until the first tick.
+   */
+  const now = useNow();
+  const kickedOff =
+    now !== null && new Date(match.kicks_off_at).getTime() <= now;
+
   const finished = match.status === "finished";
-  const live = !finished && !match.is_open;
+  const open = match.is_open && !kickedOff;
+  const live = !finished && !open;
 
   const serverPick =
     match.my_home !== null
@@ -124,7 +137,7 @@ export function MatchRow({
             )}
 
             {/* The only action on this row, and only while it's open. */}
-            {match.is_open &&
+            {open &&
               (userId ? (
                 <button
                   onClick={() => setPicking((v) => !v)}
@@ -149,7 +162,7 @@ export function MatchRow({
         </div>
       </div>
 
-      {picking && userId && (
+      {picking && userId && open && (
         <div className="border-t border-stone-200 px-3.5 py-3">
           <PredictForm
             match={match}

@@ -19,6 +19,8 @@ import { useRoomMessages } from "@/lib/hooks/use-room-messages";
 import { usePresenceCount } from "@/lib/hooks/use-presence";
 import { contentErrorMessage } from "@/lib/content-safety";
 import { GoalButton } from "@/components/rooms/goal-button";
+import { MatchRoomBanner } from "@/components/rooms/match-room-banner";
+import type { NextFixture, RoomMatch } from "@/lib/queries/room-match";
 import {
   RateLimitError,
   sendMessage,
@@ -53,6 +55,8 @@ export function RoomView({
   isAdmin = false,
   isBanned = false,
   blockedIds = [],
+  match = null,
+  nextFixture = null,
 }: {
   room: Room;
   initialMessages: Message[];
@@ -61,6 +65,10 @@ export function RoomView({
   isAdmin?: boolean;
   isBanned?: boolean;
   blockedIds?: string[];
+  /** Set for a match room. General and city rooms pass nothing and
+   *  behave exactly as before. */
+  match?: RoomMatch | null;
+  nextFixture?: NextFixture | null;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const {
@@ -122,8 +130,14 @@ export function RoomView({
     });
   }
 
-  async function send() {
-    const body = draft.trim();
+  /**
+   * @param override Text to send instead of the composer's contents.
+   *        The GOAL button uses this so a shouted goal queues, retries
+   *        and reconciles exactly like anything typed — rather than
+   *        being a second, subtly different send path.
+   */
+  async function send(override?: string) {
+    const body = (override ?? draft).trim();
     if (!body || !userId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -142,7 +156,7 @@ export function RoomView({
       // waiting for the realtime echo.
       mergeMessages([sent]);
       setPending((c) => c.filter((p) => p.tempId !== tempId));
-      setDraft("");
+      if (override === undefined) setDraft("");
     } catch (e) {
       // Keep the text. Losing what someone typed is worse than any error.
       const rejected =
@@ -298,6 +312,8 @@ export function RoomView({
           </span>
         )}
       </header>
+
+      {match && <MatchRoomBanner match={match} nextFixture={nextFixture} />}
 
       <div
         ref={scrollRef}
@@ -455,13 +471,31 @@ export function RoomView({
         </p>
       )}
 
-      {/* Match rooms get a GOAL button. Other rooms don't — it would be
-          noise in a city room. */}
-      {room.type === "match" && (
-        <div className="border-t border-stone-200 bg-stone-0 pt-2">
-          <GoalButton roomId={room.id} canPost={Boolean(userId) && !isBanned} />
-        </div>
-      )}
+      {/*
+        Any time the room is open.
+
+        This was gated on the match being locked, which meant the button
+        didn't exist until a moderator closed picks — so in a room that
+        had just been created it simply wasn't there, and tapping where
+        it should be did nothing.
+
+        Rooms close themselves when a result is entered, so "open" is
+        already the right answer: before kickoff people shout at the
+        team sheet, during the match they shout at the match, and after
+        full time there is nothing to shout at because the room is
+        closed.
+      */}
+      {room.type === "match" && room.is_open && !isBanned && (
+          <div className="border-t border-stone-200 bg-stone-0 pt-2">
+            {/* Sends through the room's own send path, so a GOAL that
+                fails queues and retries exactly like any other
+                message. */}
+            <GoalButton
+              onGoalAction={(body) => void send(body)}
+              canPost={Boolean(userId) && !isBanned}
+            />
+          </div>
+        )}
 
       <div
         className="border-t border-stone-200 bg-stone-0 px-3 py-3"
