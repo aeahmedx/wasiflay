@@ -48,11 +48,23 @@ export default async function RoomPage({
         immediately, instead of leaving people typing into a
         conversation the database has already shut.
       */}
+      {!room.match_id && (
+        <LiveRefresh watch={[{ table: "rooms", filter: `id=eq.${room.id}` }]} />
+      )}
+
       {room.match_id && (
         <>
-          {/* Fast path: the match row changing reaches everyone at once. */}
+          {/*
+            Fast path. Two rows matter and they're different tables:
+            a result changes the match, a moderator pausing changes the
+            room. Watching only the match meant a pause took the full
+            poll interval to reach anyone.
+          */}
           <LiveRefresh
-            watch={[{ table: "matches", filter: `id=eq.${room.match_id}` }]}
+            watch={[
+              { table: "matches", filter: `id=eq.${room.match_id}` },
+              { table: "rooms", filter: `id=eq.${room.id}` },
+            ]}
           />
 
           {/* Certain path: kickoff has no event at all, and realtime is
