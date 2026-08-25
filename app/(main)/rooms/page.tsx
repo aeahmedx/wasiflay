@@ -11,7 +11,7 @@ export default async function RoomsPage() {
   ]);
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900 mb-1">
           Rooms
@@ -49,8 +49,30 @@ export default async function RoomsPage() {
                   href={`/rooms/${room.slug}`}
                   className="block rounded-lg border border-stone-200 bg-stone-0 px-4 py-4 hover:border-stone-300"
                 >
-                  <span className="font-medium text-stone-900">
-                    {room.name}
+                  <span className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate font-medium text-stone-900">
+                      {room.name}
+                    </span>
+
+                    {/* Says why a room is quiet, so a waiting one reads
+                        as anticipation rather than as a dead app. */}
+                    {room.chat_state === "waiting" && (
+                      <span className="shrink-0 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-brand">
+                        Soon
+                      </span>
+                    )}
+
+                    {room.type === "match" && room.chat_state === "open" && (
+                      <span className="shrink-0 rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-0">
+                        Live
+                      </span>
+                    )}
+
+                    {room.chat_state === "closed" && (
+                      <span className="shrink-0 rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-stone-600">
+                        Ended
+                      </span>
+                    )}
                   </span>
                 </Link>
               </li>

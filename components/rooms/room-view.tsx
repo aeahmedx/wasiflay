@@ -19,8 +19,8 @@ import { useRoomMessages } from "@/lib/hooks/use-room-messages";
 import { usePresenceCount } from "@/lib/hooks/use-presence";
 import { contentErrorMessage } from "@/lib/content-safety";
 import { GoalButton } from "@/components/rooms/goal-button";
-import { MatchRoomBanner } from "@/components/rooms/match-room-banner";
-import type { NextFixture, RoomMatch } from "@/lib/queries/room-match";
+import { RoomGate } from "@/components/rooms/room-gate";
+import type { NextFixture } from "@/lib/queries/room-match";
 import {
   RateLimitError,
   sendMessage,
@@ -55,7 +55,6 @@ export function RoomView({
   isAdmin = false,
   isBanned = false,
   blockedIds = [],
-  match = null,
   nextFixture = null,
 }: {
   room: Room;
@@ -65,9 +64,8 @@ export function RoomView({
   isAdmin?: boolean;
   isBanned?: boolean;
   blockedIds?: string[];
-  /** Set for a match room. General and city rooms pass nothing and
-   *  behave exactly as before. */
-  match?: RoomMatch | null;
+  /** Only needed for a closed match room, to point at the next
+   *  fixture. General and city rooms pass nothing. */
   nextFixture?: NextFixture | null;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -313,7 +311,7 @@ export function RoomView({
         )}
       </header>
 
-      {match && <MatchRoomBanner match={match} nextFixture={nextFixture} />}
+
 
       <div
         ref={scrollRef}
@@ -485,7 +483,7 @@ export function RoomView({
         full time there is nothing to shout at because the room is
         closed.
       */}
-      {room.type === "match" && room.is_open && !isBanned && (
+      {room.type === "match" && room.chat_state === "open" && !isBanned && (
           <div className="border-t border-stone-200 bg-stone-0 pt-2">
             {/* Sends through the room's own send path, so a GOAL that
                 fails queues and retries exactly like any other
@@ -497,6 +495,9 @@ export function RoomView({
           </div>
         )}
 
+      {room.chat_state !== "open" ? (
+        <RoomGate room={room} nextFixture={nextFixture} />
+      ) : (
       <div
         className="border-t border-stone-200 bg-stone-0 px-3 py-3"
         // The iPhone home indicator covers the bottom ~34px. Without
@@ -565,6 +566,7 @@ export function RoomView({
           </p>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * waiting  before kickoff — readable, nobody can post
+ * open     from kickoff until a result is entered
+ * closed   for an hour after the result — readable, nobody can post
+ * expired  gone from the list
+ *
+ * Computed in the database, so the interface can't disagree with the
+ * insert policy about whether someone may type.
+ */
+export type ChatState = "waiting" | "open" | "closed" | "expired";
+
 export type Room = {
   id: string;
   slug: string;
@@ -8,7 +19,18 @@ export type Room = {
   is_open: boolean;
   is_archived: boolean;
   sort_order: number;
+  chat_state: ChatState;
+  match_id: string | null;
+  match_kicks_off_at: string | null;
+  match_status: string | null;
+  match_home_score: number | null;
+  match_away_score: number | null;
+  match_home_team: string | null;
+  match_away_team: string | null;
 };
+
+const ROOM_FIELDS =
+  "id, slug, name, type, is_open, is_archived, sort_order, chat_state, match_id, match_kicks_off_at, match_status, match_home_score, match_away_score, match_home_team, match_away_team";
 
 export type Message = {
   id: string;
@@ -45,16 +67,19 @@ function isRateLimit(error: { message?: string } | null): boolean {
   return Boolean(error?.message?.includes("RATE_LIMIT"));
 }
 
+/**
+ * The view already drops expired match rooms and archived ones, so
+ * there's nothing left to filter here — a room appears until its match
+ * has been over for an hour.
+ */
 export async function listRooms(client: SupabaseClient): Promise<Room[]> {
   const { data, error } = await client
-    .from("rooms")
-    .select("id, slug, name, type, is_open, is_archived, sort_order")
-    .eq("is_open", true)
-    .eq("is_archived", false)
+    .from("public_rooms")
+    .select(ROOM_FIELDS)
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
-  return (data ?? []) as Room[];
+  return (data ?? []) as unknown as Room[];
 }
 
 export async function getRoomBySlug(
@@ -62,13 +87,13 @@ export async function getRoomBySlug(
   slug: string
 ): Promise<Room | null> {
   const { data, error } = await client
-    .from("rooms")
-    .select("id, slug, name, type, is_open, is_archived, sort_order")
+    .from("public_rooms")
+    .select(ROOM_FIELDS)
     .eq("slug", slug)
     .maybeSingle();
 
   if (error) throw error;
-  return data as Room | null;
+  return data as unknown as Room | null;
 }
 
 /** Newest page, returned oldest-first for rendering. */
