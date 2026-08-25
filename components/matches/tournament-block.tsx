@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Match, Standing } from "@/lib/queries/predictions";
+import {
+  formatCountdown,
+  useCountdown,
+} from "@/lib/hooks/use-now";
 import { PredictForm } from "@/components/matches/predict-form";
 import { MatchRow } from "@/components/matches/match-row";
 
@@ -15,48 +19,6 @@ const HEADLINE: Record<string, string> = {
   goals: "Right total goals",
   none: "No points",
 };
-
-/**
- * A ticking clock, safe to render on the server.
- *
- * Reading Date.now() during render is a hydration mismatch waiting to
- * happen — the server renders "2m 22s", the client hydrates a second
- * later and renders "2m 21s", and React throws out the tree.
- *
- * useSyncExternalStore is the API for exactly this. The server snapshot
- * is null, so the countdown simply isn't rendered server-side; the
- * client fills it in on the first tick after hydration. Nothing to
- * mismatch, because the server never claims a time.
- */
-function subscribeToSeconds(onTick: () => void) {
-  const timer = setInterval(onTick, 1000);
-  return () => clearInterval(timer);
-}
-
-function useNow(): number | null {
-  return useSyncExternalStore(
-    subscribeToSeconds,
-    () => Date.now(),
-    () => null
-  );
-}
-
-function useCountdown(iso: string | null): number | null {
-  const now = useNow();
-  if (!iso || now === null) return null;
-  return new Date(iso).getTime() - now;
-}
-
-function formatLeft(ms: number): string {
-  if (ms <= 0) return "any moment";
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
 
 /**
  * The tournament, in one block.
@@ -165,6 +127,13 @@ export function TournamentBlock({
       }; SameSite=Lax`;
     }
     setCollapsed(true);
+    /**
+     * The cookie alone wasn't enough: navigating away and back served
+     * this from the router cache — a payload rendered before the cookie
+     * existed — so it reopened. Refreshing re-runs the server component,
+     * which reads the cookie.
+     */
+    router.refresh();
   }
 
   if (collapsed) {
@@ -239,12 +208,32 @@ export function TournamentBlock({
             )}
           </div>
 
+          {(result.my_points ?? 0) > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <Link
+                href={`/create?type=announcement&q=${encodeURIComponent(
+                  result.my_tier === "exact"
+                    ? `Called it: ${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
+                    : `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team} \u2014 I said ${result.my_home}\u2013${result.my_away}`
+                )}`}
+                className="rounded-lg bg-amber-400 px-3.5 py-1.5 text-sm font-semibold text-on-brand"
+              >
+                {result.my_tier === "exact" ? "Post it" : "Say something"}
+              </Link>
+              <Link
+                href={`/matches/${result.id}`}
+                className="text-sm text-stone-700 underline underline-offset-4"
+              >
+                See who called it
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
       {/* --- being played right now ------------------------------- */}
       {live.length > 0 && (
-        <div className="border-b border-amber-200 px-4 py-3">
+        <div className="px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
             {live.length > 1 ? `${live.length} playing now` : "Playing now"}
           </p>
@@ -287,8 +276,11 @@ export function TournamentBlock({
         </div>
       )}
 
-      {/* --- next one to pick -------------------------------------- */}
-      {next && (
+      {/* --- next one to pick --------------------------------------
+          Only when nothing is being played. Showing a live match and a
+          future one at the same time gave the block two subjects and no
+          answer to "what should I do right now". */}
+      {live.length === 0 && next && (
         <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-amber-900">
@@ -296,7 +288,7 @@ export function TournamentBlock({
             </span>
             {!kickedOff && left !== null && (
               <span className="text-xs font-medium tabular-nums text-amber-900">
-                {formatLeft(left)}
+                {formatCountdown(left)}
               </span>
             )}
           </div>
@@ -339,12 +331,30 @@ export function TournamentBlock({
 
               {open &&
                 (userId ? (
-                  <button
-                    onClick={() => setPicking(true)}
-                    className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0"
-                  >
-                    {hasPick ? "Change it" : "Predict the score"}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setPicking(true)}
+                      className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0"
+                    >
+                      {hasPick ? "Change it" : "Predict the score"}
+                    </button>
+
+                    {/* Calling a score before kickoff is the one brag
+                        that carries risk, which is exactly why people
+                        post it. Writes into the feed rather than opening
+                        the share sheet — a share leaves the app and
+                        leaves nothing behind. */}
+                    {hasPick && pick && next && (
+                      <Link
+                        href={`/create?type=announcement&q=${encodeURIComponent(
+                          `Calling it: ${next.home_team} ${pick[0]}\u2013${pick[1]} ${next.away_team}`
+                        )}`}
+                        className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-on-brand"
+                      >
+                        Share it
+                      </Link>
+                    )}
+                  </>
                 ) : (
                   <Link
                     href="/signup?next=%2F"
@@ -444,12 +454,20 @@ export function TournamentBlock({
           </Link>
         </div>
 
-        <button
-          onClick={collapse}
-          className="mt-2 w-full text-center text-xs text-stone-500"
-        >
-          Hide
-        </button>
+        <div className="mt-2 flex items-center justify-center gap-4">
+          <Link
+            href="/rules"
+            className="text-xs text-stone-500 underline underline-offset-4"
+          >
+            How it works
+          </Link>
+          <button
+            onClick={collapse}
+            className="text-xs text-stone-500"
+          >
+            Hide
+          </button>
+        </div>
       </div>
     </section>
 
@@ -470,14 +488,7 @@ export function TournamentBlock({
             See who called it
           </Link>
         )}
-        {next && (
-          <Link
-            href={`/matches/${next.id}`}
-            className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"
-          >
-            Match details
-          </Link>
-        )}
+
         <Link
           href="/matches"
           className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"

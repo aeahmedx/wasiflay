@@ -503,3 +503,59 @@ export async function callGoal(
   }
   return (data as number) ?? 1;
 }
+
+
+// ---- someone's record -------------------------------------------------
+
+export type UserPick = {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  kicks_off_at: string;
+  round: MatchRound;
+  status: MatchStatus;
+  home_score: number | null;
+  away_score: number | null;
+  pick_home: number;
+  pick_away: number;
+  points: number | null;
+  tier: string | null;
+};
+
+/**
+ * What someone called, and how it went.
+ *
+ * Picks on matches that are still open come back only for the person
+ * who made them — enforced in the function, not here, so a profile page
+ * can't become a way to copy the leader before kickoff.
+ */
+export async function getUserPicks(
+  client: SupabaseClient,
+  userId: string
+): Promise<UserPick[]> {
+  const { data, error } = await client.rpc("user_predictions", {
+    p_user: userId,
+    p_limit: 60,
+  });
+  if (error) return [];
+  return (data ?? []) as UserPick[];
+}
+
+export type PickSummary = {
+  played: number;
+  points: number;
+  exact_count: number;
+  rank: number | null;
+};
+
+export async function getPickSummary(
+  client: SupabaseClient,
+  userId: string
+): Promise<PickSummary | null> {
+  const { data, error } = await client.rpc("user_prediction_summary", {
+    p_user: userId,
+  });
+  if (error) return null;
+  const rows = (data ?? []) as PickSummary[];
+  return rows[0] ?? null;
+}

@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { getMatches } from "@/lib/queries/predictions";
 import { MatchRow } from "@/components/matches/match-row";
-import { NowBlock } from "@/components/matches/now-block";
+import { getMyStanding } from "@/lib/queries/predictions";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Matches" };
 
@@ -15,6 +16,8 @@ export default async function MatchesPage() {
     getMatches(supabase, 100),
     getCurrentProfile(),
   ]);
+
+  const standing = profile ? await getMyStanding(supabase) : null;
 
   /**
    * Three groups, in the order they matter:
@@ -46,13 +49,48 @@ export default async function MatchesPage() {
   return (
     <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <div className="mx-auto max-w-md">
-        <h1 className="mb-4 text-2xl font-semibold tracking-tight text-stone-900">
+        {/* router.back() with a fallback, so a shared link still has a
+            way out rather than dead-ending. */}
+        <BackLink />
+
+        <h1 className="mt-4 mb-4 text-2xl font-semibold tracking-tight text-stone-900">
           Matches
         </h1>
 
-        {/* The same block as the home screen, so what's on now is in the
-            same place wherever you are. */}
-        <NowBlock userId={profile?.id ?? null} />
+        {/*
+          No hero here. This page already lists everything in groups —
+          repeating the home screen's card would say the same thing
+          twice and push the actual list below the fold.
+
+          What it gets instead is the standing, which the hero only has
+          room to hint at.
+        */}
+        {standing && standing.played > 0 && (
+          <Link
+            href="/leaderboard"
+            className="mb-5 flex items-center gap-4 rounded-lg border border-stone-200 bg-stone-0 px-4 py-3"
+          >
+            <div>
+              <p className="text-xl font-semibold tabular-nums text-stone-900">
+                #{standing.rank}
+              </p>
+              <p className="text-xs text-stone-500">of {standing.total}</p>
+            </div>
+            <div>
+              <p className="text-xl font-semibold tabular-nums text-stone-900">
+                {standing.points}
+              </p>
+              <p className="text-xs text-stone-500">points</p>
+            </div>
+            {standing.gap_above > 0 && (
+              <p className="ml-auto text-right text-sm text-stone-600">
+                {standing.gap_above} behind
+                <br />
+                <span className="text-xs text-stone-500">the place above</span>
+              </p>
+            )}
+          </Link>
+        )}
 
         {nothing ? (
           <div className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center">
@@ -113,7 +151,15 @@ export default async function MatchesPage() {
           </div>
         )}
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 flex justify-center gap-4">
+          {profile && (
+            <Link
+              href={`/profile/${profile.id}?tab=picks`}
+              className="text-sm text-emerald-800 underline underline-offset-4"
+            >
+              My picks
+            </Link>
+          )}
           <Link
             href="/leaderboard"
             className="text-sm text-emerald-800 underline underline-offset-4"

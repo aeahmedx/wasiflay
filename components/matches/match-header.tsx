@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { kickoffLabel, type Match } from "@/lib/queries/predictions";
+import { useNow } from "@/lib/hooks/use-now";
 import { PredictForm } from "@/components/matches/predict-form";
 
 /**
@@ -26,16 +27,9 @@ export function MatchHeader({
   const supabase = useMemo(() => createClient(), []);
   const [picking, setPicking] = useState(false);
   const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
-  // Server snapshot is null, so the server never renders a time — see
-  // the note in tournament-block.tsx.
-  const now = useSyncExternalStore(
-    (onTick) => {
-      const timer = setInterval(onTick, 1000);
-      return () => clearInterval(timer);
-    },
-    () => Date.now(),
-    () => null
-  );
+  // Shared clock: cached snapshot, one timer for the whole app, null on
+  // the server. See lib/hooks/use-now.ts for why each of those matters.
+  const now = useNow();
 
   useEffect(() => {
     const channel = supabase

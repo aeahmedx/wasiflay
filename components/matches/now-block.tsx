@@ -27,6 +27,8 @@ export async function NowBlock({ userId }: { userId: string | null }) {
 
   if (live.length === 0 && !next && !result) return null;
 
+  // The rest of the open fixtures, so every pick can be made without
+  // leaving the home screen.
   const [upcoming, standing] = await Promise.all([
     getUpcomingMatches(supabase, next?.id ?? null, 6),
     userId ? getMyStanding(supabase) : Promise.resolve(null),

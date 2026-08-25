@@ -17,6 +17,8 @@ import { AccountSettings } from "@/components/account-settings";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
 import { ViewTabs } from "@/components/view-tabs";
+import { PickList } from "@/components/matches/pick-list";
+import { getPickSummary, getUserPicks } from "@/lib/queries/predictions";
 
 const TYPE_LABEL = {
   question: "Question",
@@ -39,6 +41,22 @@ export default async function ProfilePage({
   const profile = await getPublicProfile(supabase, id);
   if (!profile) notFound();
 
+  const [picks, pickSummary] = await Promise.all([
+    getUserPicks(supabase, id),
+    getPickSummary(supabase, id),
+  ]);
+
+  /**
+   * Picks lead when there are any.
+   *
+   * During a tournament a prediction record is the most interesting
+   * thing on a profile — it's the reason someone taps a name in the
+   * first place. Outside one there are no picks, the tab doesn't exist,
+   * and posts lead exactly as before.
+   */
+  const hasPicks = picks.length > 0;
+  const showPicks = hasPicks && (tab === "picks" || tab === undefined);
+
   const {
     data: { user: viewer },
   } = await supabase.auth.getUser();
@@ -57,7 +75,7 @@ export default async function ProfilePage({
     : {};
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
         <BackLink />
 
@@ -120,8 +138,19 @@ export default async function ProfilePage({
 
         <div className="mt-6 mb-3">
           <ViewTabs
-            activeKey={showAnswers ? "answers" : "posts"}
+            activeKey={
+              showPicks ? "picks" : showAnswers ? "answers" : "posts"
+            }
             tabs={[
+              ...(hasPicks
+                ? [
+                    {
+                      key: "picks",
+                      label: `Picks (${picks.length})`,
+                      href: `/profile/${id}?tab=picks`,
+                    },
+                  ]
+                : []),
               {
                 key: "posts",
                 label: `Posts (${posts.length})`,
@@ -136,7 +165,13 @@ export default async function ProfilePage({
           />
         </div>
 
-        {showAnswers ? (
+        {showPicks ? (
+          <PickList
+            picks={picks}
+            summary={pickSummary}
+            isSelf={profile.is_self}
+          />
+        ) : showAnswers ? (
           answers.length === 0 ? (
             <p className="rounded-lg border border-stone-200 bg-stone-0 px-4 py-8 text-center text-stone-600">
               {profile.is_self
