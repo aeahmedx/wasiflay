@@ -111,15 +111,14 @@ export function GateView({
           it was standing in for — better a clean dark field than a bad
           photograph. */}
       {/*
-        Sized to fill most of the first screen. Landing on the footage
-        and having to scroll to reach the rest is the point — a page
-        that shows everything at once has nothing to pull you down it,
-        and the video is doing the persuading.
+        Height follows the footage rather than the viewport. The clip is
+        cropped to a banner now, so a fixed height would crop it a
+        second time and throw away the framing that was just chosen.
 
-        Capped so it never eats a tall screen entirely, and floored so
-        it survives a small one.
+        Capped anyway, so a very wide screen doesn't hand the whole
+        first view to a video.
       */}
-      <div className="relative h-[46vh] max-h-[420px] min-h-[240px] w-full overflow-hidden bg-stone-900">
+      <div className="relative aspect-[800/336] max-h-[380px] w-full overflow-hidden bg-stone-900">
         <video
           className="h-full w-full object-cover"
           src="/tournament.mp4"
@@ -135,10 +134,10 @@ export function GateView({
         {/* Fades into the page so the video ends rather than stops. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-40"
+          className="absolute inset-x-0 bottom-0 h-24"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(245,166,35,0) 0%, rgba(245,166,35,0.55) 45%, rgba(245,166,35,0.92) 78%, #f5a623 100%)",
+              "linear-gradient(to bottom, rgba(245,166,35,0) 0%, rgba(245,166,35,0.6) 50%, rgba(245,166,35,0.94) 80%, #f5a623 100%)",
           }}
         />
       </div>
