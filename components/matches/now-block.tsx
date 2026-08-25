@@ -5,6 +5,7 @@ import {
   getLiveMatches,
   getMyStanding,
   getNextMatch,
+  getRecentResults,
   getUpcomingMatches,
 } from "@/lib/queries/predictions";
 import { TournamentBlock } from "@/components/matches/tournament-block";
@@ -19,13 +20,18 @@ import { TournamentBlock } from "@/components/matches/tournament-block";
 export async function NowBlock({ userId }: { userId: string | null }) {
   const supabase = await createClient();
 
-  const [live, next, result] = await Promise.all([
+  const [live, next, result, recent] = await Promise.all([
     getLiveMatches(supabase),
     getNextMatch(supabase),
     getLatestResult(supabase),
+    getRecentResults(supabase, 3),
   ]);
 
-  if (live.length === 0 && !next && !result) return null;
+  // Only a genuinely empty tournament hides the block. Between the last
+  // game and the next fixture being added, results hold the space.
+  if (live.length === 0 && !next && !result && recent.length === 0) {
+    return null;
+  }
 
   // The rest of the open fixtures, so every pick can be made without
   // leaving the home screen.
@@ -43,6 +49,7 @@ export async function NowBlock({ userId }: { userId: string | null }) {
       result={result}
       live={live}
       next={next}
+      recent={recent}
       upcoming={upcoming}
       standing={standing}
       userId={userId}

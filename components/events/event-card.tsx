@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { eventWhen, type WasifEvent } from "@/lib/queries/events";
+import type { WasifEvent } from "@/lib/queries/events";
+import { LocalEventTime } from "@/components/matches/local-time";
 import { regionName } from "@/lib/queries/regions";
 import type { Region } from "@/lib/queries/regions";
 
@@ -36,9 +37,11 @@ export function EventCard({
         {event.title}
       </h2>
 
-      <p className="mt-1 text-sm text-stone-700">
-        {eventWhen(event.starts_at, event.ends_at)}
-      </p>
+      <LocalEventTime
+        startsAt={event.starts_at}
+        endsAt={event.ends_at}
+        className="mt-1 block text-sm text-stone-700"
+      />
 
       <p className="mt-1 text-sm text-stone-500" dir="auto">
         {event.kind === "physical" && event.venue_name

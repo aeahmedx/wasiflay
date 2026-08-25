@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
-import { getEvent, eventWhen, isPast } from "@/lib/queries/events";
+import { getEvent, isPast } from "@/lib/queries/events";
+import { LocalEventTime } from "@/components/matches/local-time";
 import { getRegions, regionName } from "@/lib/queries/regions";
 import { BackLink } from "@/components/back-link";
 import { EventRsvp } from "@/components/events/event-rsvp";
 import { EventAttendees } from "@/components/events/event-attendees";
 import { ReportButton } from "@/components/report-button";
-import { ShareButton } from "@/components/share-button";
 
 const KIND_LABEL = {
   physical: "In person",
@@ -35,7 +35,7 @@ export default async function EventPage({
   const past = isPast(event);
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="mx-auto max-w-md">
         <BackLink />
 
@@ -72,9 +72,11 @@ export default async function EventPage({
             {event.title}
           </h1>
 
-          <p className="mt-2 font-medium text-stone-800">
-            {eventWhen(event.starts_at, event.ends_at)}
-          </p>
+          <LocalEventTime
+            startsAt={event.starts_at}
+            endsAt={event.ends_at}
+            className="mt-2 block font-medium text-stone-800"
+          />
 
           <p className="mt-1 text-sm text-stone-600">
             {event.region ? regionName(regions, event.region) : "All regions"}
@@ -113,14 +115,6 @@ export default async function EventPage({
               {event.description}
             </p>
           )}
-
-          <div className="mt-3">
-            <ShareButton
-              path={`/events/${event.id}`}
-              title={event.title}
-              label="Share this event"
-            />
-          </div>
 
           <p className="mt-3 text-sm text-stone-500">
             {event.interested_count} interested

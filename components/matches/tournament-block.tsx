@@ -35,6 +35,7 @@ const HEADLINE: Record<string, string> = {
 export function TournamentBlock({
   result,
   live,
+  recent,
   next,
   upcoming,
   standing,
@@ -45,6 +46,9 @@ export function TournamentBlock({
   /** Everything being played right now. Was a single match, which meant
    *  two of three simultaneous kickoffs were invisible. */
   live: Match[];
+  /** Shown when nothing is live or upcoming, so the block never
+   *  disappears mid-tournament. */
+  recent: Match[];
   /** The soonest match still open for picks. */
   next: Match | null;
   /** The rest of the open fixtures, behind a toggle. */
@@ -95,7 +99,12 @@ export function TournamentBlock({
     };
   }, [supabase, router]);
 
-  if (!result && live.length === 0 && !next) return null;
+  // Only truly empty — no matches at all — hides the block. Between
+  // the last game and the next fixture being added, results hold the
+  // space rather than the tournament vanishing from the app.
+  if (!result && live.length === 0 && !next && recent.length === 0) {
+    return null;
+  }
 
   // Kickoff passing closes picks with no round trip. The server agrees —
   // match_is_open() reads the same clock. Before the first tick `left`
@@ -373,6 +382,43 @@ export function TournamentBlock({
         </div>
       )}
 
+      {/* --- results, when there's nothing more current ------------- */}
+      {live.length === 0 && !next && recent.length > 0 && (
+        <div className="border-b border-amber-200 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+            {recent.length > 1 ? "Latest results" : "Latest result"}
+          </p>
+
+          <ul className="mt-1.5 space-y-2">
+            {recent.map((m) => (
+              <li key={m.id} className="flex items-center gap-2">
+                <Link
+                  href={`/matches/${m.id}`}
+                  className="min-w-0 flex-1 truncate font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
+                  dir="auto"
+                >
+                  {m.home_team} {m.home_score}
+                  {"\u2013"}
+                  {m.away_score} {m.away_team}
+                </Link>
+
+                {(m.my_points ?? 0) > 0 ? (
+                  <span className="shrink-0 rounded-full bg-emerald-800 px-2.5 py-0.5 text-sm font-semibold text-stone-0">
+                    +{m.my_points}
+                  </span>
+                ) : m.my_home !== null ? (
+                  <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-600">
+                    {m.my_home}
+                    {"\u2013"}
+                    {m.my_away}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* --- the rest, folded away --------------------------------- */}
       <div className="border-t border-amber-200">
         {upcoming.length > 0 ? (
@@ -405,7 +451,7 @@ export function TournamentBlock({
           <p className="px-4 py-2.5 text-sm text-stone-600">
             {next || live.length > 0
               ? "Nothing else scheduled yet."
-              : "No matches coming up."}
+              : "No more matches scheduled."}
           </p>
         )}
       </div>

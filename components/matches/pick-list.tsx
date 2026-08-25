@@ -1,9 +1,6 @@
 import Link from "next/link";
-import {
-  kickoffLabel,
-  type PickSummary,
-  type UserPick,
-} from "@/lib/queries/predictions";
+import type { PickSummary, UserPick } from "@/lib/queries/predictions";
+import { LocalTime } from "@/components/matches/local-time";
 import { railClass, TIER_LABEL, TIER_STYLE } from "@/components/matches/tier";
 
 /**
@@ -115,9 +112,10 @@ export function PickList({
                           {p.away_score}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-xs font-medium text-stone-500">
-                          {kickoffLabel(p.kicks_off_at)}
-                        </span>
+                        <LocalTime
+                          iso={p.kicks_off_at}
+                          className="shrink-0 text-xs font-medium text-stone-500"
+                        />
                       )}
                     </div>
 

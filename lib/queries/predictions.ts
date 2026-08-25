@@ -87,6 +87,29 @@ export async function getUpcomingMatches(
   return ((data ?? []) as unknown as Match[]).slice(0, limit);
 }
 
+/**
+ * The most recent finished matches, with no time window.
+ *
+ * The block hid itself entirely once nothing was live or upcoming —
+ * between the last game of the day and the next fixture being added,
+ * the tournament simply vanished from the app. Results are what it has
+ * to show in that gap.
+ */
+export async function getRecentResults(
+  client: SupabaseClient,
+  limit = 3
+): Promise<Match[]> {
+  const { data, error } = await client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .eq("status", "finished")
+    .order("kicks_off_at", { ascending: false })
+    .limit(limit);
+
+  if (error) return [];
+  return (data ?? []) as unknown as Match[];
+}
+
 export async function getMatch(
   client: SupabaseClient,
   id: string
@@ -147,27 +170,6 @@ export async function getNextMatch(
     .select(MATCH_FIELDS)
     .neq("status", "finished")
     .gt("kicks_off_at", new Date().toISOString())
-    .order("kicks_off_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) return null;
-  return data as unknown as Match | null;
-}
-
-export async function getCurrentMatch(
-  client: SupabaseClient
-): Promise<Match | null> {
-  // Six hours, not three: a match that kicked off and hasn't had a
-  // result entered should stay visible rather than quietly vanishing —
-  // that gap is exactly when someone would go looking for it.
-  const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await client
-    .from("public_matches")
-    .select(MATCH_FIELDS)
-    .neq("status", "finished")
-    .gte("kicks_off_at", since)
     .order("kicks_off_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -454,7 +456,7 @@ export type DeleteImpact = {
   has_room: boolean;
 };
 
-/** What a delete would cost, so it can be said before it happens. */
+/** What deleting would cost, so it can be said before it happens. */
 export async function getDeleteImpact(
   client: SupabaseClient,
   matchId: string

@@ -76,3 +76,25 @@ export function formatCountdown(ms: number): string {
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
 }
+
+
+/**
+ * False on the server, true once hydrated.
+ *
+ * For anything that can only be computed correctly in the browser —
+ * dates in the reader's timezone, most obviously. A server component
+ * formatting a time renders it in the server's timezone, which is UTC,
+ * so a 10:16pm kickoff arrives as 2:16am.
+ *
+ * Same mechanism as useNow but with no ticking: the subscribe callback
+ * is never invoked, so this costs one render and nothing after.
+ */
+const noopSubscribe = () => () => {};
+
+export function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
+}

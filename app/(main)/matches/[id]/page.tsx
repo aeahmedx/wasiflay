@@ -6,11 +6,11 @@ import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import {
   getMatch,
   getMatchPredictions,
-  kickoffLabel,
   ROUND_LABEL,
   ROUND_MULTIPLIER,
   TIER_LABEL,
 } from "@/lib/queries/predictions";
+import { LocalTime } from "@/components/matches/local-time";
 import { BackLink } from "@/components/back-link";
 import { ShareButton } from "@/components/share-button";
 import { MatchHeader } from "@/components/matches/match-header";
@@ -73,7 +73,7 @@ export default async function MatchPage({
         <p className="mb-4 text-sm text-stone-600">
           {ROUND_LABEL[match.round]}
           {multiplier > 1 ? ` · worth ${multiplier}×` : ""} ·{" "}
-          {kickoffLabel(match.kicks_off_at)}
+          <LocalTime iso={match.kicks_off_at} />
         </p>
 
         {match.status === "finished" && match.my_tier && (
