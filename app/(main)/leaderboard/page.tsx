@@ -6,7 +6,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard, getMyStanding } from "@/lib/queries/predictions";
 import { LeaderboardView } from "@/components/matches/leaderboard-view";
 
-export const metadata: Metadata = { title: "Leaderboard" };
+export const metadata: Metadata = {
+  title: "Leaderboard",
+  description:
+    "Nobody has ever won this. Whoever tops the board is the first name on it.",
+  openGraph: {
+    title: "Leaderboard · Wasif Lay",
+    description:
+      "Nobody has ever won this. Whoever tops the board is the first name on it.",
+  },
+};
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();

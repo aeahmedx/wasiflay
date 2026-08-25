@@ -7,6 +7,21 @@ import { ActivityPing, ACTIVE_COOKIE } from "@/components/activity-ping";
 
 const SITE = "https://www.wasiflay.com";
 
+/**
+ * The image every share renders.
+ *
+ * Until now there wasn't one, so a link pasted into a WhatsApp group
+ * arrived as a bare URL with a line of text — which in a community
+ * that is rightly wary of links reads as spam. A picture of last
+ * year's pitch invasion says what this is before anyone reads a word.
+ */
+const OG_IMAGE = {
+  url: "/og-tournament.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Wasif Lay · 2026 Tournament Experience",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: {
@@ -14,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · Wasif Lay",
   },
   description:
-    "Ask the community, find someone who knows, and keep what gets learned. A home for the Sudanese community.",
+    "Call every score, argue through every match, and finish top of a board nobody has ever topped. A home for the Sudanese community.",
   applicationName: "Wasif Lay",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -29,16 +44,18 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Wasif Lay",
     url: SITE,
-    title: "Wasif Lay",
+    title: "Wasif Lay · 2026 Tournament Experience",
     description:
-      "Ask the community, find someone who knows, and keep what gets learned.",
+      "Call every score, argue through every match, and finish top of a board nobody has ever topped.",
     locale: "en_US",
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Wasif Lay",
+    title: "Wasif Lay · 2026 Tournament Experience",
     description:
-      "Ask the community, find someone who knows, and keep what gets learned.",
+      "Call every score, argue through every match, and finish top of a board nobody has ever topped.",
+    images: [OG_IMAGE.url],
   },
   robots: { index: true, follow: true },
 };

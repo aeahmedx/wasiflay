@@ -31,16 +31,28 @@ export async function generateMetadata({
   // Every share lands in a group chat where nobody has heard of this.
   // The preview has about a second to say what it is.
   const title = `${match.home_team} v ${match.away_team}`;
+
+  /**
+   * What the preview says depends on what the link is for. Someone
+   * sharing a finished match is showing off a result; someone sharing
+   * an upcoming one is recruiting. The same sentence can't do both.
+   */
   const description =
     match.status === "finished"
-      ? `Finished ${match.home_score}–${match.away_score}. See who called it.`
-      : `Predict the score before kickoff.`;
+      ? `Finished ${match.home_score}\u2013${match.away_score}. See who called it.`
+      : match.is_open
+      ? "Call the score before kickoff. Free to play."
+      : "Picks are locked. See what everyone called.";
 
   return {
     title,
     description,
-    openGraph: { title, description },
-    twitter: { title, description },
+    openGraph: {
+      title: `${title} · Wasif Lay`,
+      description,
+      type: "article",
+    },
+    twitter: { title: `${title} · Wasif Lay`, description },
   };
 }
 

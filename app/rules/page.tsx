@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: "How the predictions work",
   description:
     "Predict the score, earn points, top the board. Free to play, no money involved.",
+  openGraph: {
+    title: "How the predictions work · Wasif Lay",
+    description:
+      "Predict the score, earn points, top the board. Free to play, no money involved.",
+  },
 };
 
 const LADDER = [
