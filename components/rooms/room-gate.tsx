@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { Room } from "@/lib/queries/messages";
 import type { NextFixture } from "@/lib/queries/room-match";
@@ -30,7 +32,30 @@ export function RoomGate({
   room: Room;
   nextFixture: NextFixture | null;
 }) {
+  const router = useRouter();
   const left = useCountdown(room.match_kicks_off_at);
+  const opened = useRef(false);
+
+  /**
+   * Kickoff fires no database event — the room goes from waiting to
+   * open because time moved, and nothing in any table changes. So
+   * LiveRefresh hears nothing, and without this someone watching the
+   * countdown would sit past zero staring at a locked composer.
+   *
+   * The countdown already knows. A ref rather than state so the refresh
+   * happens once and doesn't loop.
+   */
+  useEffect(() => {
+    if (room.chat_state !== "waiting") return;
+    if (left === null || left > 0) return;
+    if (opened.current) return;
+
+    opened.current = true;
+    // A beat of slack, so the server's clock has certainly passed
+    // kickoff too — otherwise it refreshes and gets 'waiting' back.
+    const timer = setTimeout(() => router.refresh(), 1200);
+    return () => clearTimeout(timer);
+  }, [left, room.chat_state, router]);
 
   if (room.chat_state === "waiting") {
     return (
@@ -45,7 +70,11 @@ export function RoomGate({
         </p>
 
         <p className="mt-1 text-2xl font-bold tabular-nums text-amber-600">
-          {left !== null ? formatCountdown(left) : "\u00a0"}
+          {left === null
+            ? "\u00a0"
+            : left <= 0
+            ? "Starting…"
+            : formatCountdown(left)}
         </p>
 
         <p className="mt-1.5 text-sm text-stone-600">

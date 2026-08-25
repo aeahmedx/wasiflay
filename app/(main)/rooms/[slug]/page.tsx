@@ -4,6 +4,7 @@ import { getRecentMessages, getRoomBySlug } from "@/lib/queries/messages";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { blockedIds } from "@/lib/queries/safety";
 import { getNextFixture } from "@/lib/queries/room-match";
+import { LiveRefresh } from "@/components/live-refresh";
 import { RoomView } from "@/components/rooms/room-view";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -38,6 +39,20 @@ export default async function RoomPage({
 
   return (
     <ErrorBoundary label="Chat">
+      {/*
+        A room has no way to know its match finished — the state that
+        closes it is computed, not stored on the room, so nothing about
+        the room row itself changes. Watching the match row means a
+        result entered at the side of a pitch closes every open room
+        immediately, instead of leaving people typing into a
+        conversation the database has already shut.
+      */}
+      {room.match_id && (
+        <LiveRefresh
+          watch={[{ table: "matches", filter: `id=eq.${room.match_id}` }]}
+        />
+      )}
+
       <RoomView
         room={room}
         initialMessages={messages}
