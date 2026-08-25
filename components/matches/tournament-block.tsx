@@ -121,8 +121,6 @@ export function TournamentBlock({
   const pick = justPicked ?? serverPick;
   const hasPick = pick !== null;
 
-  const canPost = Boolean(result?.my_tier) && (result?.my_points ?? 0) > 0;
-
   /**
    * The strip above already shows the most recent finished match, so
    * listing it again underneath said the same thing twice — which, with
@@ -136,12 +134,6 @@ export function TournamentBlock({
   const olderResults = result
     ? recent.filter((m) => m.id !== result.id)
     : recent;
-
-  const bragTitle = result
-    ? result.my_tier === "exact"
-      ? `Called it: ${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
-      : `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team} — I said ${result.my_home}\u2013${result.my_away}`
-    : "";
 
   function collapse() {
     if (result) {
@@ -461,13 +453,7 @@ export function TournamentBlock({
               </ul>
             )}
           </>
-        ) : (
-          <p className="px-4 py-2.5 text-sm text-stone-600">
-            {next || live.length > 0
-              ? "Nothing else scheduled yet."
-              : "That's the last one for now."}
-          </p>
-        )}
+        ) : null}
       </div>
 
       {/*
@@ -488,24 +474,16 @@ export function TournamentBlock({
           </p>
         )}
 
+        {/* Navigation only. Post it lives on the result above, beside
+            the thing it posts about — two of them meant the same action
+            twice on one card. */}
         <div className="flex gap-2">
-          {canPost ? (
-            <Link
-              href={`/create?type=announcement&q=${encodeURIComponent(
-                bragTitle
-              )}`}
-              className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
-            >
-              {result?.my_tier === "exact" ? "Post it" : "Say something"}
-            </Link>
-          ) : (
-            <Link
-              href="/matches"
-              className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
-            >
-              All matches
-            </Link>
-          )}
+          <Link
+            href="/matches"
+            className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
+          >
+            All matches
+          </Link>
 
           <Link
             href="/leaderboard"
