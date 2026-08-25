@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { listRooms } from "@/lib/queries/messages";
+import { LiveRefresh } from "@/components/live-refresh";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 
 export default async function RoomsPage() {
@@ -13,6 +14,8 @@ export default async function RoomsPage() {
   return (
     <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
+        <LiveRefresh watch={[{ table: "rooms" }, { table: "matches" }]} />
+
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900 mb-1">
           Rooms
         </h1>

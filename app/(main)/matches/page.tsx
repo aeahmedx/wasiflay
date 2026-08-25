@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { getMatches } from "@/lib/queries/predictions";
 import { MatchRow } from "@/components/matches/match-row";
 import { getMyStanding } from "@/lib/queries/predictions";
+import { LiveRefresh } from "@/components/live-refresh";
 import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Matches" };
@@ -51,6 +52,10 @@ export default async function MatchesPage() {
       <div className="mx-auto max-w-md">
         {/* router.back() with a fallback, so a shared link still has a
             way out rather than dead-ending. */}
+        {/* A match added, locked, scored or deleted anywhere has to
+            show up here without anyone reloading. */}
+        <LiveRefresh watch={[{ table: "matches" }, { table: "predictions" }]} />
+
         <BackLink />
 
         <h1 className="mt-4 mb-4 text-2xl font-semibold tracking-tight text-stone-900">

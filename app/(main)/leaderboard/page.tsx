@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
+import { LiveRefresh } from "@/components/live-refresh";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard, getMyStanding } from "@/lib/queries/predictions";
 import { LeaderboardView } from "@/components/matches/leaderboard-view";
@@ -20,6 +21,10 @@ export default async function LeaderboardPage() {
       <div className="mx-auto max-w-md">
         {/* router.back() with a fallback, so someone arriving from a
             shared link isn't stranded. */}
+        {/* The view refetches on its own over realtime; this is the
+            backstop for when realtime isn't arriving. */}
+        <LiveRefresh watch={[]} />
+
         <BackLink />
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900">

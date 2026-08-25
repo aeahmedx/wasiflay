@@ -5,29 +5,38 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
+ * How often to refresh regardless of what realtime says. Frequent
+ * enough that a missed event is never noticed, rare enough to be free.
+ */
+const POLL_MS = 15000;
+
+/**
  * Keeps a server-rendered page current.
  *
- * Realtime works well inside the room because the room holds its
- * messages in client state. A server-rendered page has no such state —
- * so when a moderator removes a post, the person reading it carries on
- * reading something that no longer exists, and only finds out when they
- * navigate.
+ * Two mechanisms, deliberately:
  *
- * This subscribes to the rows that page is built from and calls
- * router.refresh() when any of them change. The server re-renders,
- * which is also how a deleted post becomes a 404 rather than a ghost.
+ *   Realtime is the fast path. A result entered at the side of a pitch
+ *   reaches every open screen in well under a second.
  *
- * Deliberately not a data subscription: it fetches nothing and holds
- * nothing. It only knows that something changed, and lets the page it
- * sits on decide what that means.
+ *   The poll is the guarantee. Realtime has failed silently in this app
+ *   before — a subscription to a table that wasn't in the publication
+ *   listened to nothing for weeks and nobody could tell. During a
+ *   tournament, "usually works" is not a property worth having.
+ *
+ * The poll only runs while the tab is visible, so a phone in a pocket
+ * costs nothing, and it fires immediately when the tab comes back —
+ * which is the moment the screen is most likely to be stale.
  */
 export function LiveRefresh({
   watch,
   debounceMs = 400,
+  pollMs = POLL_MS,
 }: {
   /** Tables and filters to watch, in Supabase's filter syntax. */
   watch: { table: string; filter?: string }[];
   debounceMs?: number;
+  /** 0 disables the backstop. Only sensible where nothing can change. */
+  pollMs?: number;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -38,37 +47,70 @@ export function LiveRefresh({
 
   useEffect(() => {
     const targets = JSON.parse(key) as { table: string; filter?: string }[];
-    if (targets.length === 0) return;
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    let poll: ReturnType<typeof setInterval> | null = null;
 
-    const channel = supabase.channel(`live:${key}`);
-
-    for (const target of targets) {
-      channel.on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: target.table,
-          ...(target.filter ? { filter: target.filter } : {}),
-        },
-        () => {
-          // A moderator removing a post and its answers fires several
-          // changes at once; one refresh covers all of them.
-          if (timer) clearTimeout(timer);
-          timer = setTimeout(() => router.refresh(), debounceMs);
-        }
-      );
+    function refreshSoon() {
+      // A moderator entering a result fires several changes at once;
+      // one refresh covers all of them.
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => router.refresh(), debounceMs);
     }
 
-    channel.subscribe();
+    const channel =
+      targets.length > 0 ? supabase.channel(`live:${key}`) : null;
+
+    if (channel) {
+      for (const target of targets) {
+        channel.on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: target.table,
+            ...(target.filter ? { filter: target.filter } : {}),
+          },
+          refreshSoon
+        );
+      }
+      channel.subscribe();
+    }
+
+    function startPolling() {
+      if (poll || pollMs <= 0) return;
+      poll = setInterval(() => {
+        if (document.visibilityState === "visible") router.refresh();
+      }, pollMs);
+    }
+
+    function stopPolling() {
+      if (poll) {
+        clearInterval(poll);
+        poll = null;
+      }
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "visible") {
+        // Coming back is when the screen is most likely to be stale.
+        router.refresh();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    if (document.visibilityState === "visible") startPolling();
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      if (timer) clearTimeout(timer);
-      void supabase.removeChannel(channel);
+      if (debounce) clearTimeout(debounce);
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (channel) void supabase.removeChannel(channel);
     };
-  }, [supabase, router, key, debounceMs]);
+  }, [supabase, router, key, debounceMs, pollMs]);
 
   return null;
 }

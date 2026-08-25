@@ -92,6 +92,13 @@ export function TournamentBlock({
         { event: "*", schema: "public", table: "matches" },
         () => router.refresh()
       )
+      // Prediction counts and the standing line move without the match
+      // itself changing.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "predictions" },
+        () => router.refresh()
+      )
       .subscribe();
 
     return () => {

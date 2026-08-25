@@ -13,6 +13,7 @@ import {
 import { railClass, TIER_STYLE } from "@/components/matches/tier";
 import { LocalTime } from "@/components/matches/local-time";
 import { BackLink } from "@/components/back-link";
+import { LiveRefresh } from "@/components/live-refresh";
 import { ShareButton } from "@/components/share-button";
 import { MatchHeader } from "@/components/matches/match-header";
 
@@ -74,6 +75,15 @@ export default async function MatchPage({
   return (
     <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <div className="mx-auto max-w-md">
+        {/* Locking reveals everyone's picks and a result scores them —
+            both land here without a reload. */}
+        <LiveRefresh
+          watch={[
+            { table: "matches", filter: `id=eq.${match.id}` },
+            { table: "predictions", filter: `match_id=eq.${match.id}` },
+          ]}
+        />
+
         <BackLink />
 
         <div className="mt-4 mb-3">
