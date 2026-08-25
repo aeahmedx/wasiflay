@@ -73,7 +73,9 @@ export async function getUpcomingMatches(
   let query = client
     .from("public_matches")
     .select(MATCH_FIELDS)
-    .eq("status", "scheduled")
+    // Same reasoning as getNextMatch: a match locked ahead of kickoff is
+    // still upcoming, it just isn't pickable.
+    .neq("status", "finished")
     .gt("kicks_off_at", new Date().toISOString())
     .order("kicks_off_at", { ascending: true })
     .limit(limit + 1);
@@ -127,14 +129,23 @@ export async function getLiveMatches(
   return (data ?? []) as unknown as Match[];
 }
 
-/** The soonest match still open for picks. */
+/**
+ * The soonest match that hasn't kicked off yet.
+ *
+ * Deliberately not filtered to status = 'scheduled'. A match locked
+ * early — picks closed before kickoff, which happens — has status
+ * 'locked' with a kickoff still in the future, so it satisfied neither
+ * this nor getLiveMatches and disappeared from the block entirely while
+ * still sitting on /matches. It belongs here; whether picks are open is
+ * a separate question the interface already answers from is_open.
+ */
 export async function getNextMatch(
   client: SupabaseClient
 ): Promise<Match | null> {
   const { data, error } = await client
     .from("public_matches")
     .select(MATCH_FIELDS)
-    .eq("status", "scheduled")
+    .neq("status", "finished")
     .gt("kicks_off_at", new Date().toISOString())
     .order("kicks_off_at", { ascending: true })
     .limit(1)

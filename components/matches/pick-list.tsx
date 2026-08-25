@@ -4,22 +4,7 @@ import {
   type PickSummary,
   type UserPick,
 } from "@/lib/queries/predictions";
-
-const TIER_LABEL: Record<string, string> = {
-  exact: "Exact",
-  margin: "Margin",
-  winner: "Winner",
-  goals: "Goals",
-  none: "Missed",
-};
-
-const TIER_STYLE: Record<string, string> = {
-  exact: "bg-amber-400 text-on-brand",
-  margin: "bg-emerald-800 text-stone-0",
-  winner: "bg-emerald-800 text-stone-0",
-  goals: "bg-stone-200 text-stone-700",
-  none: "bg-stone-100 text-stone-500",
-};
+import { railClass, TIER_LABEL, TIER_STYLE } from "@/components/matches/tier";
 
 /**
  * Someone's prediction record.
@@ -27,12 +12,14 @@ const TIER_STYLE: Record<string, string> = {
  * Meant to be looked at by other people — being publicly right is the
  * whole reward here, and this is what a rivalry is built on.
  *
- * The earlier version was a flat list of grey rows where every pick
- * looked like every other one. What people actually scan for is: did
- * they call it, and by how much. So the scoreline is the largest thing
- * on each row, the prediction sits directly beneath the result it is
- * being judged against, and an exact call gets the brand yellow — the
- * only place it appears in this list, so it reads as rare.
+ * What people scan for is: did they call it, and by how much. So the
+ * scoreline is the largest thing on each row, the prediction sits
+ * directly beneath the result it is judged against, and an exact call
+ * gets the brand yellow.
+ *
+ * Styling comes from components/matches/tier.ts, shared with the
+ * matches list — the same information shown two ways is how one product
+ * ends up looking like two.
  */
 export function PickList({
   picks,
@@ -103,15 +90,11 @@ export function PickList({
                       scrolling, without a badge on every row. */}
                   <span
                     aria-hidden
-                    className={`w-1 shrink-0 ${
-                      finished
-                        ? tier === "exact"
-                          ? "bg-amber-400"
-                          : (p.points ?? 0) > 0
-                          ? "bg-emerald-800"
-                          : "bg-stone-200"
-                        : "bg-stone-300"
-                    }`}
+                    className={`w-1 shrink-0 ${railClass({
+                      finished,
+                      tier: p.tier,
+                      points: p.points,
+                    })}`}
                   />
 
                   <div className="min-w-0 flex-1 px-3.5 py-3">

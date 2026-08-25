@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -169,8 +169,7 @@ export function TournamentBlock({
   }
 
   return (
-    <>
-      <section className="mb-3 overflow-hidden rounded-lg border border-amber-300 bg-amber-50">
+    <section className="mb-5 overflow-hidden rounded-lg border border-amber-300 bg-amber-50">
       {/* --- what just finished ------------------------------------ */}
       {result && (
         <div className="border-b border-amber-200 px-4 py-3">
@@ -196,7 +195,7 @@ export function TournamentBlock({
                 </p>
               ) : (
                 <p className="mt-0.5 text-sm text-stone-600">
-                  You didn&apos;t predict this one.
+                  You had no pick on this one.
                 </p>
               )}
             </div>
@@ -233,7 +232,7 @@ export function TournamentBlock({
 
       {/* --- being played right now ------------------------------- */}
       {live.length > 0 && (
-        <div className="px-4 py-3">
+        <div className="border-b border-amber-200 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
             {live.length > 1 ? `${live.length} playing now` : "Playing now"}
           </p>
@@ -277,10 +276,12 @@ export function TournamentBlock({
       )}
 
       {/* --- next one to pick --------------------------------------
-          Only when nothing is being played. Showing a live match and a
-          future one at the same time gave the block two subjects and no
-          answer to "what should I do right now". */}
-      {live.length === 0 && next && (
+          Shown alongside live matches, not instead of them. Hiding it
+          while anything was playing meant the next fixture vanished
+          from the block — and because `upcoming` excludes whatever
+          `next` is, it fell out of that list too and the card claimed
+          nothing was scheduled. */}
+      {next && (
         <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-amber-900">
@@ -470,32 +471,5 @@ export function TournamentBlock({
         </div>
       </div>
     </section>
-
-      {/*
-        The secondary routes, outside the card.
-
-        Inside, they made the block read as a pile of options; removed
-        entirely, the picks for a specific match became hard to reach.
-        A quiet row underneath keeps them one tap away without competing
-        with the two actions that matter.
-      */}
-      <nav className="mb-5 -mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
-        {result && (
-          <Link
-            href={`/matches/${result.id}`}
-            className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"
-          >
-            See who called it
-          </Link>
-        )}
-
-        <Link
-          href="/matches"
-          className="text-sm text-stone-600 underline underline-offset-4 hover:text-stone-900"
-        >
-          All matches
-        </Link>
-      </nav>
-    </>
   );
 }
