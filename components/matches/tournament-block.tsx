@@ -123,6 +123,20 @@ export function TournamentBlock({
 
   const canPost = Boolean(result?.my_tier) && (result?.my_points ?? 0) > 0;
 
+  /**
+   * The strip above already shows the most recent finished match, so
+   * listing it again underneath said the same thing twice — which, with
+   * one finished match and nothing upcoming, was the whole block saying
+   * one thing twice.
+   *
+   * This version always renders the strip when there's a result (the
+   * whole block collapses rather than the strip dismissing on its own),
+   * so the filter is unconditional.
+   */
+  const olderResults = result
+    ? recent.filter((m) => m.id !== result.id)
+    : recent;
+
   const bragTitle = result
     ? result.my_tier === "exact"
       ? `Called it: ${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
@@ -383,14 +397,14 @@ export function TournamentBlock({
       )}
 
       {/* --- results, when there's nothing more current ------------- */}
-      {live.length === 0 && !next && recent.length > 0 && (
+      {live.length === 0 && !next && olderResults.length > 0 && (
         <div className="border-b border-amber-200 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-            {recent.length > 1 ? "Latest results" : "Latest result"}
+            {olderResults.length > 1 ? "Earlier results" : "Earlier result"}
           </p>
 
           <ul className="mt-1.5 space-y-2">
-            {recent.map((m) => (
+            {olderResults.map((m) => (
               <li key={m.id} className="flex items-center gap-2">
                 <Link
                   href={`/matches/${m.id}`}
@@ -451,7 +465,7 @@ export function TournamentBlock({
           <p className="px-4 py-2.5 text-sm text-stone-600">
             {next || live.length > 0
               ? "Nothing else scheduled yet."
-              : "No more matches scheduled."}
+              : "That's the last one for now."}
           </p>
         )}
       </div>
