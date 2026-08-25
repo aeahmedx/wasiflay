@@ -230,7 +230,7 @@ export function TabBar({
                   </span>
 
                   {tab.href === "/notifications" && unread > 0 && (
-                    <span className="absolute right-1/2 top-2 translate-x-4 rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-semibold text-stone-900">
+                    <span className="absolute right-1/2 top-2 translate-x-4 rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-semibold text-on-brand">
                       {unread > 9 ? "9+" : unread}
                     </span>
                   )}

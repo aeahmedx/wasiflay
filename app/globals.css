@@ -133,6 +133,34 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* =====================================================================
+   Touch behaviour
+
+   touch-action: manipulation removes the browser's wait-and-see for a
+   double tap. Two effects, both of which matter on a phone at an event:
+   taps register immediately instead of ~300ms later, and tapping a
+   button twice in frustration retries instead of zooming the page.
+
+   Applied to controls rather than globally, so pinch-to-zoom on photos
+   still works — that one is a genuine accessibility need.
+   ===================================================================== */
+button,
+a,
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Stops the whole page rubber-banding behind a scrolling list, which on
+   iOS makes a fixed tab bar look like it's detaching. */
+body {
+  overscroll-behavior-y: none;
+}
+
 /* Headings sit tighter than Tailwind's default — the wordmark is
    condensed and heavy, and loose headings read as a different brand. */
 h1, h2, h3 {
@@ -140,29 +168,54 @@ h1, h2, h3 {
 }
 
 /* =====================================================================
-   Confetti
+   Brand artwork in dark mode
 
-   Fires locally for whoever tapped GOAL. Nobody else sees it — the
-   message in the conversation is the shared part; this is just the
-   small reward for being the one who said it.
+   The logo files are black line art on transparent. On a dark surface
+   that's invisible, so it's inverted to white.
+
+   Done here rather than with a dark: utility because this has to be
+   certain: a utility that silently doesn't apply leaves the logo
+   invisible, and nobody notices until someone opens the app at night.
    ===================================================================== */
-@keyframes wl-confetti {
-  0% {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-120px) rotate(360deg);
+.brand-art {
+  transition: filter 120ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .brand-art {
+    filter: invert(1);
   }
 }
 
+/* =====================================================================
+   Splash
+
+   The dismissal is a CSS animation, not a JavaScript timer. If
+   hydration ever fails — a bad deploy, a mismatch, a client error — a
+   JS-driven splash stays on screen forever and the app is unusable.
+   An animation runs regardless, so the worst case is a slightly slow
+   app rather than a locked one.
+   ===================================================================== */
+@keyframes wl-splash-out {
+  0%,
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.wl-splash {
+  animation: wl-splash-out 1.45s ease forwards;
+}
+
+/* Someone who asked for less motion gets none of it. */
 @media (prefers-reduced-motion: reduce) {
-  @keyframes wl-confetti {
-    0%,
-    100% {
-      opacity: 0;
-    }
+  .wl-splash {
+    animation-duration: 0.9s;
+    animation-timing-function: step-end;
   }
 }
 
@@ -243,5 +296,88 @@ input:-webkit-autofill:focus {
 
   img {
     filter: brightness(0.94);
+  }
+}
+
+/* =====================================================================
+   Ink that must not invert
+
+   The brand yellow is the same colour in both modes, so text sitting on
+   it has to be too. Any normal token would flip to near-white in dark
+   mode and leave pale text on yellow.
+   ===================================================================== */
+.text-on-brand {
+  color: #2b1d07;
+}
+
+/* =====================================================================
+   Safe-area bottoms
+
+   Anything anchored to the bottom of the screen has to clear the iPhone
+   home indicator and Android's gesture bar. env() resolves to 0 on
+   devices without one, so there's no dead space where it isn't needed.
+   ===================================================================== */
+.pb-safe {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.pb-safe-page {
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.bottom-safe {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+/* =====================================================================
+   Touch behaviour
+
+   touch-action: manipulation removes the browser's wait-and-see for a
+   double tap. Taps register immediately instead of ~300ms later, and
+   tapping a button twice in frustration retries instead of zooming.
+
+   Scoped to controls, so pinch-to-zoom on photos still works.
+   ===================================================================== */
+button,
+a,
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Stops the page rubber-banding behind a scrolling list, which on iOS
+   makes a fixed tab bar look like it's detaching. */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* =====================================================================
+   Confetti
+
+   Fires locally for whoever tapped GOAL. Nobody else sees it — the
+   message in the conversation is the shared part; this is the small
+   reward for being the one who said it.
+   ===================================================================== */
+@keyframes wl-confetti {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes wl-confetti {
+    0%,
+    100% {
+      opacity: 0;
+    }
   }
 }
