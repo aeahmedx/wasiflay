@@ -381,3 +381,29 @@ body {
     }
   }
 }
+
+/* =====================================================================
+   The gate
+
+   The gate is brand yellow in both modes — it never inverts, because a
+   launch screen that changes colour depending on someone's phone
+   settings isn't a launch screen. So everything sitting on it has to
+   stay put too.
+
+   Scoped to .gate-surface so none of this reaches the app, where dark
+   mode is doing exactly what it should.
+   ===================================================================== */
+.gate-surface .brand-art {
+  /* The wordmark inverts to white everywhere else in dark mode. On
+     yellow that would be unreadable, and the logo is the one thing on
+     this page that must be recognisable at a glance. */
+  filter: none;
+}
+
+.gate-surface .on-brand-border {
+  border-color: #2b1d07;
+}
+
+.gate-surface .on-brand-border-soft {
+  border-color: rgba(43, 29, 7, 0.28);
+}

@@ -8,6 +8,8 @@ import type { GateState } from "@/lib/queries/gate";
 import type { Match } from "@/lib/queries/predictions";
 import { PredictForm } from "@/components/matches/predict-form";
 import { Wordmark } from "@/components/wordmark";
+import { GateShare } from "@/components/gate/gate-share";
+import { GateInstall } from "@/components/gate/gate-install";
 
 /** How often to recheck once the clock has passed opening time. */
 const RECHECK_MS = 5000;
@@ -69,6 +71,32 @@ export function GateView({
 
   const opensSoon = untilOpen !== null && untilOpen <= 0;
 
+  /**
+   * The one second this page exists for.
+   *
+   * Between the clock hitting zero and the server agreeing there is a
+   * gap of a second or two, and a blank "Opening…" through it wastes
+   * the only genuinely dramatic moment the app will ever have. So the
+   * gap gets used.
+   */
+  if (opensSoon) {
+    return (
+      <main className="gate-surface flex min-h-dvh flex-col items-center justify-center bg-amber-400 px-8 text-center">
+        <div className="animate-pulse">
+          <Wordmark size="lg" priority />
+        </div>
+        <p className="mt-8 text-3xl font-black leading-tight tracking-tight text-on-brand">
+          Let the games
+          <br />
+          begin
+        </p>
+        <p className="mt-4 text-sm font-medium text-on-brand opacity-70">
+          Opening everything…
+        </p>
+      </main>
+    );
+  }
+
   const pick =
     justPicked ??
     (state.my_home !== null
@@ -103,7 +131,7 @@ export function GateView({
   const others = Math.max(state.prediction_count - names.length, 0);
 
   return (
-    <main className="min-h-dvh bg-amber-400">
+    <main className="gate-surface min-h-dvh bg-amber-400">
       {/* --- the footage ------------------------------------------- */}
       {/* The dark backing shows for the fraction of a second before the
           first frame decodes. A poster image did that job before, but a
@@ -169,7 +197,7 @@ export function GateView({
 
         <Link
           href="/welcome"
-          className="mx-auto mt-5 block rounded-lg border-2 border-on-brand px-7 py-2.5 text-sm font-bold text-on-brand"
+          className="mx-auto mt-5 block rounded-lg border-2 on-brand-border px-7 py-2.5 text-sm font-bold text-on-brand"
         >
           Welcome
         </Link>
@@ -286,7 +314,7 @@ export function GateView({
         </section>
 
         {/* --- the prize ------------------------------------------- */}
-        <div className="mt-5 flex items-start gap-3 rounded-lg border-2 border-on-brand/25 px-4 py-3">
+        <div className="mt-5 flex items-start gap-3 rounded-lg border-2 on-brand-border-soft px-4 py-3">
           <span aria-hidden className="text-2xl leading-none">
             🏆
           </span>
@@ -297,12 +325,20 @@ export function GateView({
           </p>
         </div>
 
-        <Link
-          href="/rules"
-          className="mx-auto mt-5 block rounded-lg border-2 border-on-brand px-7 py-2.5 text-sm font-bold text-on-brand"
-        >
-          Rules
-        </Link>
+        {/* Rules and Share sit together: one explains it, the other
+            passes it on, and both are things you do once you've read
+            far enough to care. */}
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <Link
+            href="/rules"
+            className="block rounded-lg border-2 on-brand-border px-7 py-2.5 text-sm font-bold text-on-brand"
+          >
+            Rules
+          </Link>
+          <GateShare />
+        </div>
+
+        <GateInstall />
 
         {/* --- the countdown --------------------------------------- */}
         <div className="mt-8 text-center">
