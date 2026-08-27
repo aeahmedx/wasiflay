@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
+import { createClient } from "@/lib/supabase/server";
+import { getGateState } from "@/lib/queries/gate";
 import { SUPPORT_EMAIL } from "@/lib/legal";
 
 export const metadata: Metadata = {
@@ -29,7 +31,16 @@ const ROUNDS = [
   { round: "Final", mult: "×3" },
 ];
 
-export default function RulesPage() {
+export default async function RulesPage() {
+  /**
+   * While the gate is up, matches and the leaderboard bounce straight
+   * back to it — so linking to them here would be a door that opens
+   * onto the door you came through. They appear the moment the app
+   * does.
+   */
+  const supabase = await createClient();
+  const { is_open: appOpen } = await getGateState(supabase);
+
   return (
     <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
       <article className="mx-auto max-w-md">
@@ -178,18 +189,22 @@ export default function RulesPage() {
         </div>
 
         <div className="mt-8 flex flex-wrap gap-4 border-t border-stone-200 pt-5 text-sm">
-          <Link
-            href="/matches"
-            className="text-emerald-800 underline underline-offset-4"
-          >
-            Matches
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="text-emerald-800 underline underline-offset-4"
-          >
-            Leaderboard
-          </Link>
+          {appOpen && (
+            <>
+              <Link
+                href="/matches"
+                className="text-emerald-800 underline underline-offset-4"
+              >
+                Matches
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="text-emerald-800 underline underline-offset-4"
+              >
+                Leaderboard
+              </Link>
+            </>
+          )}
           <Link
             href="/guidelines"
             className="text-emerald-800 underline underline-offset-4"

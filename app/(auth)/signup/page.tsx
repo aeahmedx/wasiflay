@@ -1,13 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { safeNext } from "@/lib/safe-next";
+import { Wordmark } from "@/components/wordmark";
 
 const ERRORS: Record<string, string> = {
   missing_code: "Sign-in didn't complete. Try again.",
   exchange_failed: "Sign-in didn't complete. Try again.",
 };
+
+/**
+ * The three steps, shown before the button rather than after it.
+ *
+ * Signing in is the only thing anyone can do on this page, and it costs
+ * them something — an account, on a domain they may not know. Showing
+ * what it's the first step of makes it a step rather than a toll. The
+ * two below it are the reward, and they're specific: nobody is moved by
+ * "join the community".
+ */
+const STEPS = [
+  { n: 1, label: "Sign in", note: "Ten seconds with Google" },
+  { n: 2, label: "Call the scores", note: "Every match, before kickoff" },
+  { n: 3, label: "Talk your talk", note: "Live rooms while it's playing" },
+];
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
@@ -46,35 +63,55 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-dvh flex flex-col justify-center px-6 py-12 bg-stone-50">
-      <div className="w-full max-w-sm mx-auto">
-        <div className="mb-10">
-          <div
-            aria-hidden
-            className="w-11 h-11 rounded-lg bg-emerald-800 flex items-center justify-center mb-6"
-          >
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-              <path
-                d="M5 12h12m0 0-4-4m4 4-4 4"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
-            Wasif Lay
-          </h1>
-          <p className="mt-2 text-stone-600 leading-relaxed">
-            Find the right person, the right answer, the right next step.
-          </p>
+    <main className="min-h-dvh bg-stone-50 px-6 py-10">
+      <div className="mx-auto w-full max-w-sm">
+        <div className="flex justify-center">
+          <Wordmark size="sm" priority />
         </div>
+
+        <p className="mt-4 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
+          2026 Tournament Experience
+        </p>
+
+        <h1 className="mt-2 text-center text-2xl font-bold leading-tight tracking-tight text-stone-900">
+          Call every score.
+        </h1>
+
+        {/* The steps sit above the button: what you're starting, before
+            what it costs. */}
+        <ol className="mt-7 space-y-3">
+          {STEPS.map((step) => (
+            <li key={step.n} className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                  step.n === 1
+                    ? "bg-amber-400 text-on-brand"
+                    : "bg-stone-200 text-stone-500"
+                }`}
+              >
+                {step.n}
+              </span>
+              <span className="min-w-0">
+                <span
+                  className={`block text-sm font-semibold ${
+                    step.n === 1 ? "text-stone-900" : "text-stone-600"
+                  }`}
+                >
+                  {step.label}
+                </span>
+                <span className="block text-xs text-stone-500">
+                  {step.note}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
 
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
           >
             {error}
           </div>
@@ -83,9 +120,9 @@ export default function SignupPage() {
         <button
           onClick={signInWithGoogle}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 font-medium text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-60"
+          className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-stone-0 px-4 py-3.5 font-medium text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-60"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
+          <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
@@ -106,9 +143,22 @@ export default function SignupPage() {
           {loading ? "Opening Google…" : "Continue with Google"}
         </button>
 
+        <p className="mt-3 text-center text-xs text-stone-500">
+          Free, no payment, nothing to cancel.
+        </p>
+
         <p className="mt-6 text-xs leading-relaxed text-stone-500">
           Wasif Lay is for coordination, not conflict. Political argument
-          threads are removed. This applies to everyone equally.
+          threads are removed. This applies to everyone equally. By
+          continuing you agree to the{" "}
+          <Link href="/terms" className="underline underline-offset-2">
+            terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            privacy policy
+          </Link>
+          .
         </p>
       </div>
     </main>

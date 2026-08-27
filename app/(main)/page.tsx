@@ -12,7 +12,6 @@ import {
 import { PostFeed } from "@/components/posts/post-feed";
 import { EventList } from "@/components/events/event-list";
 import { Wordmark } from "@/components/wordmark";
-import { NowBlock } from "@/components/matches/now-block";
 import { cookies } from "next/headers";
 import { getUpcomingEvents } from "@/lib/queries/events";
 import { RegionPicker } from "@/components/region-picker";
@@ -53,9 +52,22 @@ export default async function HomePage({
   const isStaff = profile?.role === "moderator" || profile?.role === "admin";
   const openReports = isStaff ? await getOpenReportCount(supabase) : 0;
 
-  // No ?region= means "my region". An explicit ?region=all means everything.
-  const chosenRegion =
-    params.region ?? savedRegion ?? profile?.region ?? null;
+  /**
+   * One feed, for now.
+   *
+   * Regions split a community that is barely a few hundred people into
+   * pieces, and each piece then looks empty. The machinery stays — the
+   * cookie, the query parameter, the filtering, the picker component —
+   * because it's right for a year from now and wrong for this month.
+   *
+   * Turning it back on is deleting this constant and restoring the two
+   * lines below it. Nothing else has to change.
+   */
+  const REGIONS_ENABLED = false;
+
+  const chosenRegion = REGIONS_ENABLED
+    ? params.region ?? savedRegion ?? profile?.region ?? null
+    : null;
   const region = chosenRegion === "all" ? null : chosenRegion;
 
   const events =
@@ -124,10 +136,6 @@ export default async function HomePage({
           What do you need?
         </Link>
 
-        {/* Renders nothing when there are no matches, so the app is
-            unchanged outside a tournament. */}
-        <NowBlock userId={profile?.id ?? null} />
-
         <div className="mb-3 flex items-center justify-between gap-2">
           <ViewTabs
             activeKey={tab}
@@ -174,7 +182,9 @@ export default async function HomePage({
             is what forced the scroll. The picker carries the active tab
             through, so switching region keeps you where you were. */}
         <div className="mb-4">
-          <RegionPicker regions={regions} current={region} tab={tab} />
+          {REGIONS_ENABLED && (
+            <RegionPicker regions={regions} current={region} tab={tab} />
+          )}
         </div>
 
         {tab === "events" ? (
