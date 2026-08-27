@@ -82,9 +82,7 @@ export default function WelcomePage() {
           <h2 className="font-semibold text-stone-900">Who&apos;s behind it</h2>
           <p>
             One person, building it for the community he&apos;s from. No
-            company, no investors, nobody being sold anything. There are
-            no ads and there never will be, and nothing you write here is
-            for sale.
+            company, no investors, nobody being sold anything.
           </p>
 
           <h2 className="font-semibold text-stone-900">What it isn&apos;t</h2>

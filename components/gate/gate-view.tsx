@@ -14,6 +14,22 @@ import { GateInstall } from "@/components/gate/gate-install";
 /** How often to recheck once the clock has passed opening time. */
 const RECHECK_MS = 5000;
 
+/** 1st, 2nd, 3rd, 4th — including the teens, which break the pattern. */
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
+
 /**
  * What everyone sees for the week before the tournament.
  *
@@ -129,6 +145,19 @@ export function GateView({
 
   const names = state.recent_names ?? [];
   const others = Math.max(state.prediction_count - names.length, 0);
+
+  /**
+   * Being early is the thing worth saying while the numbers are small.
+   *
+   * "4th to pick" is a boast at four people and meaningless at four
+   * hundred — the exact opposite of a running total, which is why it
+   * covers the week a total can't. Shown only to someone who has
+   * actually picked, and only while the field is still small enough
+   * for the position to mean something.
+   */
+  const position = justPicked ? null : state.my_position;
+  const showPosition =
+    position !== null && position > 0 && position <= 50;
 
   return (
     <main className="gate-surface min-h-dvh bg-amber-400">
@@ -263,6 +292,11 @@ export function GateView({
                     You said {pick[0]}
                     {"\u2013"}
                     {pick[1]}
+                    {showPosition && (
+                      <span className="ml-2 font-semibold text-emerald-800">
+                        {ordinal(position)} to pick
+                      </span>
+                    )}
                   </p>
                 )}
 
@@ -295,6 +329,10 @@ export function GateView({
               Names, never scores. Picks stay hidden until kickoff and
               the gate is not an exception — showing what someone called
               a week early would let anyone copy whoever they rate. */}
+          {/* Names appear only once there are enough to read as a
+              group — one lonely name says "nobody is here" louder than
+              saying nothing does. The threshold lives in the database,
+              so this and the count can't disagree. */}
           {names.length > 0 && (
             <div className="border-t border-stone-200 bg-stone-50 px-4 py-3">
               <p className="text-sm leading-relaxed text-stone-700">

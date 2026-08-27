@@ -14,8 +14,11 @@ export type GateState = {
   my_home: number | null;
   my_away: number | null;
   /** Names only — never what they called. Picks stay hidden until
-   *  kickoff, and the gate is not an exception. */
+   *  kickoff, and the gate is not an exception. Empty until enough
+   *  people have picked to read as a group. */
   recent_names: string[];
+  /** Where you came in the order of picks. Null if you haven't. */
+  my_position: number | null;
 };
 
 /** Nothing configured means no gate — which is the app's normal life. */
@@ -32,6 +35,7 @@ const OPEN: GateState = {
   my_home: null,
   my_away: null,
   recent_names: [],
+  my_position: null,
 };
 
 /**
