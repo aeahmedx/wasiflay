@@ -274,12 +274,14 @@ export function GateView({
         </div>
 
         {/* --- the prize ------------------------------------------- */}
-        <div className="mt-5 flex items-start gap-3 rounded-lg border-2 on-brand-border-soft px-4 py-3">
+        <div className="mt-5 flex items-start gap-3 rounded-lg bg-stone-0/90 px-4 py-3">
           <span aria-hidden className="text-2xl leading-none">
             🏆
           </span>
-          <p className="text-sm leading-relaxed text-on-brand">
-            <span className="font-bold">Nobody has ever won this.</span>{" "}
+          <p className="text-sm leading-relaxed text-stone-700">
+            <span className="font-semibold text-stone-900">
+              Nobody has ever won this.
+            </span>{" "}
             Whoever tops the board is the first name on it, and that name
             stays on it.
           </p>
