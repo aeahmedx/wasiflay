@@ -151,19 +151,19 @@ export function GateView({
 
         {/* Below the wordmark: it reads as a credit line, and a credit
             line goes under the name it credits. */}
-        <p className="mt-0.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-on-brand opacity-70">
+        <p className="mt-0.5 text-center text-sm italic text-on-brand opacity-60">
           presents
         </p>
 
-        <h1 className="mt-3 text-center text-[2rem] font-black leading-[1.05] tracking-tight text-on-brand">
-          2026 Tournament
+        <h1 className="mt-3 text-center text-[2.6rem] font-black leading-[0.95] tracking-[-0.02em] text-on-brand">
+          Call every
           <br />
-          Experience
+          score.
         </h1>
 
-        <p className="mt-3 text-center text-sm font-medium leading-relaxed text-on-brand opacity-80">
-          Call every score. Argue in the rooms. Finish top of a board
-          nobody has ever topped.
+        <p className="mt-4 text-center text-[15px] leading-relaxed text-on-brand opacity-75">
+          Twenty-five years of this tournament and nobody has ever won
+          the picks. Two days, thirty-one matches, one board.
         </p>
 
         <Link
@@ -173,81 +173,66 @@ export function GateView({
           Welcome
         </Link>
 
-        {/* --- the fixtures --------------------------------------- */}
-        <section className="mt-7 overflow-hidden rounded-xl bg-stone-0 shadow-sm">
-          <div className="px-4 pt-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                {matches.length > 1
-                  ? `First ${matches.length} matches`
-                  : "First match"}
+        {/* --- the schedule sheet ---------------------------------- */}
+        <section className="mt-8 rounded-lg bg-stone-0 px-4 pb-4 pt-3.5">
+          <div className="flex items-baseline justify-between gap-3 border-b-2 border-stone-900/15 pb-2.5">
+            <h2 className="text-base font-bold text-stone-900">
+              {matches.length > 1
+                ? `First ${matches.length} matches`
+                : "First match"}
+            </h2>
+
+            {state.prediction_count >= 10 && (
+              <p className="text-[13px] text-stone-500">
+                {state.prediction_count} picks in
               </p>
-
-              {state.prediction_count >= 10 && (
-                <p className="text-xs text-stone-500">
-                  {state.prediction_count} picks in
-                </p>
-              )}
-            </div>
-
-            {matches.length === 0 ? (
-              <>
-                <p className="mt-1 text-xl font-bold text-stone-900">
-                  Announced soon
-                </p>
-                <p className="mt-1 mb-4 text-sm text-stone-600">
-                  Fixtures go up here as soon as the schedule lands.
-                </p>
-              </>
-            ) : (
-              <div className="pb-4">
-                <GateMatchList matches={matches} signedIn={signedIn} />
-
-                {/* More fixtures appear as the week goes, which is the
-                    only honest reason a countdown has to bring anyone
-                    back. */}
-                {/*
-                  The blocker isn't a lack of information, it's the
-                  feeling of being unqualified to answer. Saying nobody
-                  knows anything removes that — and it's true, which is
-                  what makes the competition fair in the first place.
-                */}
-                <p className="mt-3 text-center text-xs leading-relaxed text-stone-500">
-                  Nobody knows anything yet — that&apos;s the fun. Change
-                  your picks any time before kickoff.
-                  <br />
-                  More matches open through the week.
-                </p>
-              </div>
-            )}
-
-            {!signedIn && matches.length > 0 && (
-              <Link
-                href={`/signup?next=${encodeURIComponent("/gate")}`}
-                className="mb-4 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
-              >
-                Make your predictions
-              </Link>
             )}
           </div>
 
-          {/* Names, never scores — and only once there are enough to
-              read as a group. */}
-          {names.length > 0 && (
-            <div className="border-t border-stone-200 bg-stone-50 px-4 py-3">
-              <p className="text-sm leading-relaxed text-stone-700">
-                <span className="font-semibold text-stone-900" dir="auto">
-                  {names.slice(0, 3).join(", ")}
-                </span>
-                {others > 0 ? (
-                  <> and {others} others have already picked</>
-                ) : names.length === 1 ? (
-                  <> has already picked</>
-                ) : (
-                  <> have already picked</>
-                )}
+          {matches.length === 0 ? (
+            <p className="py-6 text-center text-[15px] text-stone-500">
+              Fixtures go up here as soon as the schedule lands.
+            </p>
+          ) : (
+            <>
+              <GateMatchList matches={matches} signedIn={signedIn} />
+
+              {/*
+                The blocker isn't missing information, it's feeling
+                unqualified to answer. Saying nobody knows anything
+                removes that — and it's true, which is what makes the
+                whole thing fair.
+              */}
+              <p className="mt-3 border-t border-stone-900/10 pt-3 text-[13px] leading-relaxed text-stone-500">
+                Nobody knows anything yet. That&apos;s the fun of it —
+                change your picks any time before kickoff, and more
+                matches open through the week.
               </p>
-            </div>
+            </>
+          )}
+
+          {!signedIn && matches.length > 0 && (
+            <Link
+              href={`/signup?next=${encodeURIComponent("/gate")}`}
+              className="mt-3 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
+            >
+              Sign in to save your picks
+            </Link>
+          )}
+
+          {names.length > 0 && (
+            <p className="mt-3 border-t border-stone-900/10 pt-3 text-[13px] leading-relaxed text-stone-600">
+              <span className="font-semibold text-stone-900" dir="auto">
+                {names.slice(0, 3).join(", ")}
+              </span>
+              {others > 0 ? (
+                <> and {others} others have picked already</>
+              ) : names.length === 1 ? (
+                <> has picked already</>
+              ) : (
+                <> have picked already</>
+              )}
+            </p>
           )}
         </section>
 
@@ -264,7 +249,7 @@ export function GateView({
           </p>
           <div className="mt-2.5 flex gap-2">
             <a
-              href="https://apps.apple.com/app/dawrat/id6446090616"
+              href="https://apps.apple.com/us/app/aldawrat/id6477748398"
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-center text-sm font-medium text-stone-800"
@@ -272,7 +257,7 @@ export function GateView({
               App Store
             </a>
             <a
-              href="https://play.google.com/store/search?q=dawrat&c=apps"
+              href="https://play.google.com/store/apps/details?id=com.ahmed.dawrat"
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-center text-sm font-medium text-stone-800"
@@ -315,11 +300,11 @@ export function GateView({
             <p className="text-lg font-bold text-on-brand">Opening…</p>
           ) : untilOpen !== null ? (
             <>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
-                Everything opens in
-              </p>
-              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
+              <p className="text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
                 {formatCountdown(untilOpen)}
+              </p>
+              <p className="mt-1.5 text-sm text-on-brand opacity-70">
+                until everything opens
               </p>
             </>
           ) : (
@@ -328,8 +313,9 @@ export function GateView({
             </p>
           )}
 
-          <p className="mt-3 text-xs font-medium text-on-brand opacity-60">
-            Live match rooms · predictions · the community feed
+          <p className="mt-3 text-[13px] leading-relaxed text-on-brand opacity-60">
+            Then the rooms open, the board goes live, and the rest of the
+            app comes with it.
           </p>
         </div>
       </div>

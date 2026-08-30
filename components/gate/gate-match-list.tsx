@@ -3,32 +3,21 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { GateMatch } from "@/lib/queries/gate";
 
-const ROUND_LABEL: Record<string, string> = {
-  group: "Group stage",
-  quarter: "Quarter-final",
-  semi: "Semi-final",
-  final: "Final",
-};
-
-/** Sat 8:00 AM — enough to plan a day around, in the reader's own time. */
-function whenLabel(iso: string): string {
-  const d = new Date(iso);
-  return `${d.toLocaleDateString([], { weekday: "short" })} ${d.toLocaleTimeString(
-    [],
-    { hour: "numeric", minute: "2-digit" }
-  )}`;
-}
-
 /**
- * The fixtures on the gate, each pickable in place.
+ * The fixtures, as a schedule sheet.
  *
- * More than one match is the difference between a page someone visits
- * once and a page they come back to — but only if picking all of them
- * is a single sitting. Tapping into a match page and back for each
- * one is enough friction that people do the first and stop.
+ * Four matches kick off together in every slot, so time is the real
+ * structure of this weekend — not an attribute of each fixture but the
+ * thing that groups them. Printing it once down the left, with the
+ * matches ruled beneath it, is how the paper taped to a fence at a
+ * tournament reads, and it's how someone actually scans for "what's on
+ * at half nine".
+ *
+ * The earlier version was a stack of identical rounded cards, each
+ * repeating its own time in a line of middle-dot metadata. That is a
+ * layout that would suit any list of anything.
  */
 export function GateMatchList({
   matches,
@@ -37,20 +26,71 @@ export function GateMatchList({
   matches: GateMatch[];
   signedIn: boolean;
 }) {
-  if (matches.length === 0) return null;
+  // Grouped by kickoff, in order. Object key order is insertion order
+  // for string keys, and the input is already sorted by time.
+  const slots = useMemo(() => {
+    const byTime = new Map<string, GateMatch[]>();
+    for (const match of matches) {
+      const list = byTime.get(match.kicks_off_at) ?? [];
+      list.push(match);
+      byTime.set(match.kicks_off_at, list);
+    }
+    return [...byTime.entries()];
+  }, [matches]);
+
+  if (slots.length === 0) return null;
 
   return (
-    <ul className="mt-3 space-y-2">
-      {matches.map((match) => (
-        <li key={match.id}>
-          <GateMatchRow match={match} signedIn={signedIn} />
-        </li>
+    <div className="divide-y divide-stone-900/10">
+      {slots.map(([kickoff, games]) => (
+        <Slot
+          key={kickoff}
+          kickoff={kickoff}
+          games={games}
+          signedIn={signedIn}
+        />
       ))}
-    </ul>
+    </div>
   );
 }
 
-function GateMatchRow({
+function Slot({
+  kickoff,
+  games,
+  signedIn,
+}: {
+  kickoff: string;
+  games: GateMatch[];
+  signedIn: boolean;
+}) {
+  const when = new Date(kickoff);
+  const day = when.toLocaleDateString([], { weekday: "long" });
+  const time = when
+    .toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    .toLowerCase();
+
+  return (
+    <section className="flex gap-4 py-4">
+      {/* The time is printed once for the whole slot, because four
+          matches share it. Repeating it on each row would be four
+          copies of the same fact. */}
+      <header className="w-16 shrink-0 pt-0.5">
+        <p className="text-[15px] font-bold leading-none tabular-nums text-stone-900">
+          {time}
+        </p>
+        <p className="mt-1 text-[11px] leading-none text-stone-500">{day}</p>
+      </header>
+
+      <div className="min-w-0 flex-1 space-y-3">
+        {games.map((game) => (
+          <Fixture key={game.id} match={game} signedIn={signedIn} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Fixture({
   match,
   signedIn,
 }: {
@@ -58,7 +98,6 @@ function GateMatchRow({
   signedIn: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const left = useCountdown(match.kicks_off_at);
 
   const [open, setOpen] = useState(false);
   const [home, setHome] = useState(String(match.my_home ?? ""));
@@ -84,14 +123,6 @@ function GateMatchRow({
     setSaving(true);
     setError(null);
 
-    /**
-     * The RPC reports failure by returning an error, not by throwing —
-     * so it's read directly. Throwing it to catch it two lines later
-     * would be a detour that hides where the failure came from.
-     *
-     * try/catch still wraps the call itself, because the network can
-     * fail before the RPC ever answers.
-     */
     try {
       const { error } = await supabase.rpc("make_prediction", {
         p_match: match.id,
@@ -119,112 +150,111 @@ function GateMatchRow({
     }
   }
 
-  const numberField =
-    "w-16 rounded-lg border border-stone-300 bg-stone-0 px-2 py-2 text-center text-lg font-semibold tabular-nums text-stone-900";
+  const scoreBox =
+    "w-14 rounded-md border-2 border-stone-900/15 bg-stone-0 py-2 text-center text-xl font-bold tabular-nums text-stone-900 focus:border-stone-900/40 focus:outline-none";
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-0 px-3.5 py-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="min-w-0 flex-1 font-semibold leading-tight text-stone-900" dir="auto">
+    <div>
+      <div className="flex items-baseline gap-3">
+        <div className="min-w-0 flex-1">
           {match.teams_announced ? (
-            <>
-              {match.home_team} <span className="text-stone-400">v</span>{" "}
+            <p
+              className="truncate text-[15px] font-semibold leading-snug text-stone-900"
+              dir="auto"
+            >
+              {match.home_team}{" "}
+              <span className="font-normal text-stone-400">v</span>{" "}
               {match.away_team}
-            </>
+            </p>
           ) : (
-            <span className="text-stone-500">Teams announced soon</span>
+            <p className="text-[15px] font-medium leading-snug text-stone-400">
+              Teams not drawn yet
+            </p>
           )}
-        </p>
 
-        {left !== null && left > 0 && (
-          <span className="shrink-0 text-xs font-medium tabular-nums text-stone-500">
-            {formatCountdown(left)}
-          </span>
+          {/* Only what isn't already obvious from position on the sheet:
+              which field to stand at. */}
+          {match.field_label && (
+            <p className="mt-0.5 text-[11px] text-stone-500">
+              {match.field_label}
+              {match.group_label ? `, ${match.group_label}` : ""}
+            </p>
+          )}
+        </div>
+
+        {saved && !open && (
+          <p className="shrink-0 text-[15px] font-bold tabular-nums text-emerald-800">
+            {saved[0]}
+            {"\u2013"}
+            {saved[1]}
+          </p>
+        )}
+
+        {!saved && !open && signedIn && match.teams_announced && (
+          <button
+            onClick={() => setOpen(true)}
+            className="shrink-0 rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
+          >
+            Pick
+          </button>
+        )}
+
+        {saved && !open && signedIn && (
+          <button
+            onClick={() => setOpen(true)}
+            className="shrink-0 text-[13px] font-medium text-stone-500 underline underline-offset-2"
+          >
+            Change
+          </button>
+        )}
+
+        {!signedIn && match.teams_announced && (
+          <Link
+            href={`/signup?next=${encodeURIComponent("/gate")}`}
+            className="shrink-0 rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
+          >
+            Pick
+          </Link>
         )}
       </div>
 
-      {/* Group and field make it legible as part of a real tournament,
-          which is most of what makes a guess feel worth making. */}
-      <p className="mt-0.5 text-xs text-stone-500">
-        {match.group_label ?? ROUND_LABEL[match.round] ?? match.round}
-        {match.field_label ? ` · ${match.field_label}` : ""}
-        {" · "}
-        {whenLabel(match.kicks_off_at)}
-        {match.prediction_count >= 5 && ` · ${match.prediction_count} picks`}
-      </p>
-
-      {open && signedIn ? (
-        <div className="mt-3">
-          <div className="flex items-center justify-center gap-3">
+      {open && signedIn && (
+        <div className="mt-2.5">
+          <div className="flex items-center gap-2">
             <input
               inputMode="numeric"
               value={home}
               onChange={(e) => setHome(e.target.value.replace(/\D/g, ""))}
               aria-label={`${match.home_team} score`}
-              className={numberField}
+              autoFocus
+              className={scoreBox}
             />
-            <span className="text-stone-400">{"\u2013"}</span>
             <input
               inputMode="numeric"
               value={away}
               onChange={(e) => setAway(e.target.value.replace(/\D/g, ""))}
               aria-label={`${match.away_team} score`}
-              className={numberField}
+              className={scoreBox}
             />
-          </div>
 
-          {error && (
-            <p className="mt-2 text-center text-sm text-red-700">{error}</p>
-          )}
-
-          <div className="mt-3 flex gap-2">
             <button
               onClick={save}
               disabled={saving || home === "" || away === ""}
-              className="flex-1 rounded-lg bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-stone-0 disabled:opacity-40"
+              className="ml-1 rounded-md bg-emerald-800 px-4 py-2.5 text-[13px] font-bold text-stone-0 disabled:opacity-40"
             >
-              {saving ? "Saving…" : "Save pick"}
+              {saving ? "Saving" : "Save"}
             </button>
+
             <button
               onClick={() => setOpen(false)}
-              className="rounded-lg border border-stone-300 px-4 py-2.5 text-sm text-stone-700"
+              className="text-[13px] font-medium text-stone-500"
             >
               Cancel
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="mt-2.5 flex items-center gap-2">
-          {saved && (
-            <span className="rounded-full bg-stone-100 px-3 py-1 text-sm font-medium tabular-nums text-stone-800">
-              You said {saved[0]}
-              {"\u2013"}
-              {saved[1]}
-            </span>
-          )}
 
-          {!signedIn ? (
-            <Link
-              href={`/signup?next=${encodeURIComponent("/gate")}`}
-              className="ml-auto rounded-full bg-amber-400 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-on-brand"
-            >
-              Predict
-            </Link>
-          ) : !match.teams_announced ? (
-            <span className="ml-auto text-xs text-stone-500">
-              Pick when teams drop
-            </span>
-          ) : (
-            <button
-              onClick={() => setOpen(true)}
-              className={`ml-auto rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide ${
-                saved
-                  ? "bg-stone-100 text-stone-700"
-                  : "bg-amber-400 text-on-brand"
-              }`}
-            >
-              {saved ? "Change" : "Predict"}
-            </button>
+          {error && (
+            <p className="mt-1.5 text-[13px] text-red-700">{error}</p>
           )}
         </div>
       )}

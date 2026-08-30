@@ -3,7 +3,13 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { setFeaturedMatch, setGate, type GateState } from "@/lib/queries/gate";
+import {
+  setFeaturedMatch,
+  setGate,
+  setGateReveal,
+  type GateReveal,
+  type GateState,
+} from "@/lib/queries/gate";
 import { getStaffMatches, type StaffMatch } from "@/lib/queries/predictions";
 
 const input =
@@ -26,7 +32,14 @@ function toLocalInput(iso: string | null): string {
  * is on the front, and a switch to open it now if the clock is wrong or
  * something needs fixing in front of people.
  */
-export function GateControls({ initial }: { initial: GateState }) {
+export function GateControls({
+  initial,
+  reveal,
+}: {
+  initial: GateState;
+  /** How many fixtures the gate is showing, and how many exist. */
+  reveal: GateReveal;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
@@ -103,6 +116,25 @@ export function GateControls({ initial }: { initial: GateState }) {
         initial.forced
           ? "Back on the clock."
           : "Forced open. The countdown is ignored until you switch this off.",
+      "Couldn't change that."
+    );
+  }
+
+  /**
+   * How many fixtures appear on the gate.
+   *
+   * The reason a countdown page gets a second visit. One on Monday,
+   * four on Wednesday, the lot by Friday — someone who picked what was
+   * there finds more waiting, and none of it is invented: the fixtures
+   * are real and the pacing is a decision.
+   */
+  function reveals(count: number) {
+    void run(
+      () => setGateReveal(supabase, count),
+      (n) =>
+        n >= reveal.available
+          ? `Showing all ${reveal.available} fixtures.`
+          : `Showing the first ${n}.`,
       "Couldn't change that."
     );
   }
@@ -205,6 +237,61 @@ export function GateControls({ initial }: { initial: GateState }) {
         Name the teams TBD until the schedule lands — the gate says
         &ldquo;teams announced soon&rdquo; and still takes sign-ups.
       </p>
+
+      <div className="mt-5 border-t border-stone-200 pt-4">
+        <p className="text-sm font-medium text-stone-800">
+          Fixtures on the gate
+        </p>
+        <p className="mt-0.5 text-xs leading-relaxed text-stone-500">
+          Everyone sees this many matches to pick, soonest first. Raise
+          it through the week so there's something new to come back to.
+        </p>
+
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={() => reveals(Math.max(reveal.revealed - 1, 1))}
+            disabled={busy || reveal.revealed <= 1}
+            aria-label="Show one fewer"
+            className="h-10 w-10 rounded-lg border border-stone-300 text-lg font-bold text-stone-700 disabled:opacity-40"
+          >
+            −
+          </button>
+
+          <p className="min-w-[4.5rem] text-center">
+            <span className="block text-2xl font-bold tabular-nums leading-none text-stone-900">
+              {reveal.revealed}
+            </span>
+            <span className="block text-xs text-stone-500">
+              of {reveal.available}
+            </span>
+          </p>
+
+          <button
+            onClick={() => reveals(reveal.revealed + 1)}
+            disabled={busy || reveal.revealed >= reveal.available}
+            aria-label="Show one more"
+            className="h-10 w-10 rounded-lg border border-stone-300 text-lg font-bold text-stone-700 disabled:opacity-40"
+          >
+            +
+          </button>
+
+          <button
+            onClick={() => reveals(4)}
+            disabled={busy}
+            className="ml-1 rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 disabled:opacity-40"
+          >
+            First 4
+          </button>
+
+          <button
+            onClick={() => reveals(reveal.available)}
+            disabled={busy || reveal.revealed >= reveal.available}
+            className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 disabled:opacity-40"
+          >
+            All
+          </button>
+        </div>
+      </div>
 
       <div className="mt-5 border-t border-stone-200 pt-4">
         <button
