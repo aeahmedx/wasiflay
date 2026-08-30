@@ -5,30 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { GateState } from "@/lib/queries/gate";
-import type { Match } from "@/lib/queries/predictions";
-import { PredictForm } from "@/components/matches/predict-form";
 import { Wordmark } from "@/components/wordmark";
 import { GateShare } from "@/components/gate/gate-share";
 import { GateInstall } from "@/components/gate/gate-install";
+import { GateMatchList } from "@/components/gate/gate-match-list";
+import type { GateMatch } from "@/lib/queries/gate";
 
 /** How often to recheck once the clock has passed opening time. */
 const RECHECK_MS = 5000;
-
-/** 1st, 2nd, 3rd, 4th — including the teens, which break the pattern. */
-function ordinal(n: number): string {
-  const rem100 = n % 100;
-  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1:
-      return `${n}st`;
-    case 2:
-      return `${n}nd`;
-    case 3:
-      return `${n}rd`;
-    default:
-      return `${n}th`;
-  }
-}
 
 /**
  * What everyone sees for the week before the tournament.
@@ -44,16 +28,17 @@ function ordinal(n: number): string {
  */
 export function GateView({
   state,
+  matches,
   signedIn,
   userId,
 }: {
   state: GateState;
+  /** The fixtures revealed so far. Grows as the week goes. */
+  matches: GateMatch[];
   signedIn: boolean;
   userId: string | null;
 }) {
   const router = useRouter();
-  const [picking, setPicking] = useState(false);
-  const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
 
   const untilOpen = useCountdown(state.opens_at);
   const untilKickoff = useCountdown(state.kicks_off_at);
@@ -113,51 +98,8 @@ export function GateView({
     );
   }
 
-  const pick =
-    justPicked ??
-    (state.my_home !== null
-      ? ([state.my_home, state.my_away] as [number, number])
-      : null);
-
-  const featured: Match | null =
-    state.match_id && state.kicks_off_at
-      ? ({
-          id: state.match_id,
-          home_team: state.home_team ?? "",
-          away_team: state.away_team ?? "",
-          kicks_off_at: state.kicks_off_at,
-          round: "group",
-          status: "scheduled",
-          home_score: null,
-          away_score: null,
-          locked_at: null,
-          room_id: null,
-          room_slug: null,
-          is_open: true,
-          prediction_count: state.prediction_count,
-          my_home: pick?.[0] ?? null,
-          my_away: pick?.[1] ?? null,
-          my_points: null,
-          my_tier: null,
-          created_at: state.kicks_off_at,
-        } as Match)
-      : null;
-
   const names = state.recent_names ?? [];
   const others = Math.max(state.prediction_count - names.length, 0);
-
-  /**
-   * Being early is the thing worth saying while the numbers are small.
-   *
-   * "4th to pick" is a boast at four people and meaningless at four
-   * hundred — the exact opposite of a running total, which is why it
-   * covers the week a total can't. Shown only to someone who has
-   * actually picked, and only while the field is still small enough
-   * for the position to mean something.
-   */
-  const position = justPicked ? null : state.my_position;
-  const showPosition =
-    position !== null && position > 0 && position <= 50;
 
   return (
     <main className="gate-surface min-h-dvh bg-amber-400">
@@ -231,108 +173,57 @@ export function GateView({
           Welcome
         </Link>
 
-        {/* --- the first match ------------------------------------- */}
+        {/* --- the fixtures --------------------------------------- */}
         <section className="mt-7 overflow-hidden rounded-xl bg-stone-0 shadow-sm">
-          <div className="px-4 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-              First match
-            </p>
+          <div className="px-4 pt-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                {matches.length > 1
+                  ? `First ${matches.length} matches`
+                  : "First match"}
+              </p>
 
-            {!featured ? (
+              {state.prediction_count >= 10 && (
+                <p className="text-xs text-stone-500">
+                  {state.prediction_count} picks in
+                </p>
+              )}
+            </div>
+
+            {matches.length === 0 ? (
               <>
                 <p className="mt-1 text-xl font-bold text-stone-900">
                   Announced soon
                 </p>
-                <p className="mt-1 text-sm text-stone-600">
-                  The fixture goes up here the moment the schedule lands.
-                </p>
-              </>
-            ) : !state.teams_announced ? (
-              <>
-                <p className="mt-1 text-xl font-bold text-stone-900">
-                  Teams announced soon
-                </p>
-                <p className="mt-1 text-sm text-stone-600">
-                  Sign in now and you can call the score the moment they
-                  drop.
+                <p className="mt-1 mb-4 text-sm text-stone-600">
+                  Fixtures go up here as soon as the schedule lands.
                 </p>
               </>
             ) : (
-              <>
-                <p
-                  className="mt-1 text-xl font-bold leading-tight text-stone-900"
-                  dir="auto"
-                >
-                  {state.home_team}{" "}
-                  <span className="text-stone-400">v</span>{" "}
-                  {state.away_team}
+              <div className="pb-4">
+                <GateMatchList matches={matches} signedIn={signedIn} />
+
+                {/* More fixtures appear as the week goes, which is the
+                    only honest reason a countdown has to bring anyone
+                    back. */}
+                <p className="mt-3 text-center text-xs text-stone-500">
+                  More matches open through the week.
                 </p>
-                {untilKickoff !== null && untilKickoff > 0 && (
-                  <p className="mt-1 text-sm font-medium tabular-nums text-stone-600">
-                    Kicks off in {formatCountdown(untilKickoff)}
-                  </p>
-                )}
-              </>
+              </div>
             )}
 
-            {picking && featured && userId ? (
-              <div className="mt-3">
-                <PredictForm
-                  match={featured}
-                  onDoneAction={(h: number, a: number) => {
-                    setJustPicked([h, a]);
-                    setPicking(false);
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="mt-3">
-                {pick && (
-                  <p className="mb-2 rounded-full bg-stone-100 px-3 py-1.5 text-center text-sm font-medium tabular-nums text-stone-800">
-                    You said {pick[0]}
-                    {"\u2013"}
-                    {pick[1]}
-                    {showPosition && (
-                      <span className="ml-2 font-semibold text-emerald-800">
-                        {ordinal(position)} to pick
-                      </span>
-                    )}
-                  </p>
-                )}
-
-                {!signedIn ? (
-                  <Link
-                    href={`/signup?next=${encodeURIComponent("/gate")}`}
-                    className="block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
-                  >
-                    {state.teams_announced
-                      ? "Make your prediction"
-                      : "Get ready"}
-                  </Link>
-                ) : state.teams_announced && featured ? (
-                  <button
-                    onClick={() => setPicking(true)}
-                    className="w-full rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
-                  >
-                    {pick ? "Change your pick" : "Make your prediction"}
-                  </button>
-                ) : (
-                  <p className="rounded-lg bg-stone-100 px-4 py-3 text-center text-sm font-medium text-stone-700">
-                    You&apos;re in. We&apos;ll be here.
-                  </p>
-                )}
-              </div>
+            {!signedIn && matches.length > 0 && (
+              <Link
+                href={`/signup?next=${encodeURIComponent("/gate")}`}
+                className="mb-4 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
+              >
+                Make your predictions
+              </Link>
             )}
           </div>
 
-          {/* --- who's already in ---------------------------------
-              Names, never scores. Picks stay hidden until kickoff and
-              the gate is not an exception — showing what someone called
-              a week early would let anyone copy whoever they rate. */}
-          {/* Names appear only once there are enough to read as a
-              group — one lonely name says "nobody is here" louder than
-              saying nothing does. The threshold lives in the database,
-              so this and the count can't disagree. */}
+          {/* Names, never scores — and only once there are enough to
+              read as a group. */}
           {names.length > 0 && (
             <div className="border-t border-stone-200 bg-stone-50 px-4 py-3">
               <p className="text-sm leading-relaxed text-stone-700">

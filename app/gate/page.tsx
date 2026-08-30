@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
-import { getGateState } from "@/lib/queries/gate";
+import { getGateMatches, getGateState } from "@/lib/queries/gate";
 import { GateView } from "@/components/gate/gate-view";
 
 export const metadata: Metadata = {
@@ -19,8 +19,9 @@ export const metadata: Metadata = {
 export default async function GatePage() {
   const supabase = await createClient();
 
-  const [state, profile] = await Promise.all([
+  const [state, matches, profile] = await Promise.all([
     getGateState(supabase),
+    getGateMatches(supabase),
     getCurrentProfile(),
   ]);
 
@@ -31,6 +32,7 @@ export default async function GatePage() {
   return (
     <GateView
       state={state}
+      matches={matches}
       signedIn={profile !== null}
       userId={profile?.id ?? null}
     />

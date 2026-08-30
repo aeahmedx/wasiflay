@@ -78,3 +78,53 @@ export async function setFeaturedMatch(
   });
   if (error) throw error;
 }
+
+
+export type GateMatch = {
+  id: string;
+  home_team: string;
+  away_team: string;
+  kicks_off_at: string;
+  round: string;
+  teams_announced: boolean;
+  prediction_count: number;
+  my_home: number | null;
+  my_away: number | null;
+};
+
+/**
+ * The fixtures on the gate, soonest first.
+ *
+ * How many is a decision, not a schedule — someone who picked two on
+ * Monday finds four on Wednesday, and that's the only honest reason a
+ * countdown page has to bring anyone back.
+ */
+export async function getGateMatches(
+  client: SupabaseClient
+): Promise<GateMatch[]> {
+  const { data, error } = await client.rpc("gate_matches");
+  if (error) return [];
+  return (data ?? []) as GateMatch[];
+}
+
+export type GateReveal = { revealed: number; available: number };
+
+export async function getGateReveal(
+  client: SupabaseClient
+): Promise<GateReveal> {
+  const { data, error } = await client.rpc("gate_reveal");
+  if (error) return { revealed: 1, available: 0 };
+  const rows = (data ?? []) as GateReveal[];
+  return rows[0] ?? { revealed: 1, available: 0 };
+}
+
+export async function setGateReveal(
+  client: SupabaseClient,
+  count: number
+): Promise<number> {
+  const { data, error } = await client.rpc("set_gate_reveal", {
+    p_count: count,
+  });
+  if (error) throw error;
+  return (data as number) ?? count;
+}
