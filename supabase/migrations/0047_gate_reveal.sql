@@ -17,6 +17,18 @@
 
 begin;
 
+/**
+ * Where a fixture sits in the tournament.
+ *
+ * A pick screen that says only "Colorado v Virginia" is asking someone
+ * to judge two names. The same fixture labelled "Group A · Field 1" is
+ * legible as part of a real weekend, which is most of what makes a
+ * guess feel worth making.
+ */
+alter table matches
+  add column if not exists group_label text,
+  add column if not exists field_label text;
+
 alter table site_settings
   add column if not exists gate_reveal_count integer not null default 1;
 
@@ -26,6 +38,11 @@ alter table site_settings
  * Only scheduled matches — one that has kicked off has no business on
  * a page whose entire purpose is picking before kickoff.
  */
+-- Dropped first because two columns are being added to what it
+-- returns. A function's OUT parameters define its row type, and
+-- Postgres won't replace one row type with a different one.
+drop function if exists gate_matches();
+
 create or replace function gate_matches()
 returns table (
   id               uuid,
@@ -33,6 +50,8 @@ returns table (
   away_team        text,
   kicks_off_at     timestamptz,
   round            match_round,
+  group_label      text,
+  field_label      text,
   teams_announced  boolean,
   prediction_count integer,
   my_home          integer,
@@ -41,6 +60,7 @@ returns table (
 language sql stable security definer set search_path = public
 as $$
   select m.id, m.home_team, m.away_team, m.kicks_off_at, m.round,
+         m.group_label, m.field_label,
          (coalesce(trim(m.home_team), '') <> ''
             and lower(trim(m.home_team)) not like 'tbd%'
             and lower(trim(m.away_team)) not like 'tbd%'),

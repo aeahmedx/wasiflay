@@ -13,6 +13,15 @@ const ROUND_LABEL: Record<string, string> = {
   final: "Final",
 };
 
+/** Sat 8:00 AM — enough to plan a day around, in the reader's own time. */
+function whenLabel(iso: string): string {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString([], { weekday: "short" })} ${d.toLocaleTimeString(
+    [],
+    { hour: "numeric", minute: "2-digit" }
+  )}`;
+}
+
 /**
  * The fixtures on the gate, each pickable in place.
  *
@@ -134,8 +143,13 @@ function GateMatchRow({
         )}
       </div>
 
+      {/* Group and field make it legible as part of a real tournament,
+          which is most of what makes a guess feel worth making. */}
       <p className="mt-0.5 text-xs text-stone-500">
-        {ROUND_LABEL[match.round] ?? match.round}
+        {match.group_label ?? ROUND_LABEL[match.round] ?? match.round}
+        {match.field_label ? ` · ${match.field_label}` : ""}
+        {" · "}
+        {whenLabel(match.kicks_off_at)}
         {match.prediction_count >= 5 && ` · ${match.prediction_count} picks`}
       </p>
 

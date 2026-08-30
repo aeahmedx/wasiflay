@@ -86,6 +86,8 @@ export type GateMatch = {
   away_team: string;
   kicks_off_at: string;
   round: string;
+  group_label: string | null;
+  field_label: string | null;
   teams_announced: boolean;
   prediction_count: number;
   my_home: number | null;

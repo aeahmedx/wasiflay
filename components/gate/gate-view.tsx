@@ -206,7 +206,16 @@ export function GateView({
                 {/* More fixtures appear as the week goes, which is the
                     only honest reason a countdown has to bring anyone
                     back. */}
-                <p className="mt-3 text-center text-xs text-stone-500">
+                {/*
+                  The blocker isn't a lack of information, it's the
+                  feeling of being unqualified to answer. Saying nobody
+                  knows anything removes that — and it's true, which is
+                  what makes the competition fair in the first place.
+                */}
+                <p className="mt-3 text-center text-xs leading-relaxed text-stone-500">
+                  Nobody knows anything yet — that&apos;s the fun. Change
+                  your picks any time before kickoff.
+                  <br />
                   More matches open through the week.
                 </p>
               </div>
@@ -241,6 +250,37 @@ export function GateView({
             </div>
           )}
         </section>
+
+        {/* Pointing at the official app costs nothing and makes this
+            look like a good citizen of the weekend rather than a rival
+            — they run the tournament, this runs the picks. */}
+        <div className="mt-5 rounded-lg bg-stone-0/90 px-4 py-3">
+          <p className="text-sm font-semibold text-stone-900">
+            Fixtures, brackets and results
+          </p>
+          <p className="mt-0.5 text-sm leading-relaxed text-stone-600">
+            SASF runs the tournament on the Dawrat app. Get it for the
+            official schedule — then come back here to call the scores.
+          </p>
+          <div className="mt-2.5 flex gap-2">
+            <a
+              href="https://apps.apple.com/app/dawrat/id6446090616"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-center text-sm font-medium text-stone-800"
+            >
+              App Store
+            </a>
+            <a
+              href="https://play.google.com/store/search?q=dawrat&c=apps"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-center text-sm font-medium text-stone-800"
+            >
+              Google Play
+            </a>
+          </div>
+        </div>
 
         {/* --- the prize ------------------------------------------- */}
         <div className="mt-5 flex items-start gap-3 rounded-lg border-2 on-brand-border-soft px-4 py-3">
