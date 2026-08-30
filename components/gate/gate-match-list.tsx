@@ -10,14 +10,8 @@ import type { GateMatch } from "@/lib/queries/gate";
  *
  * Four matches kick off together in every slot, so time is the real
  * structure of this weekend — not an attribute of each fixture but the
- * thing that groups them. Printing it once down the left, with the
- * matches ruled beneath it, is how the paper taped to a fence at a
- * tournament reads, and it's how someone actually scans for "what's on
- * at half nine".
- *
- * The earlier version was a stack of identical rounded cards, each
- * repeating its own time in a line of middle-dot metadata. That is a
- * layout that would suit any list of anything.
+ * thing that groups them. Printed once down the left with the matches
+ * ruled beneath it, the way the paper taped to a fence reads.
  */
 export function GateMatchList({
   matches,
@@ -26,8 +20,6 @@ export function GateMatchList({
   matches: GateMatch[];
   signedIn: boolean;
 }) {
-  // Grouped by kickoff, in order. Object key order is insertion order
-  // for string keys, and the input is already sorted by time.
   const slots = useMemo(() => {
     const byTime = new Map<string, GateMatch[]>();
     for (const match of matches) {
@@ -64,24 +56,29 @@ function Slot({
   signedIn: boolean;
 }) {
   const when = new Date(kickoff);
-  const day = when.toLocaleDateString([], { weekday: "long" });
-  const time = when
+  const day = when.toLocaleDateString([], { weekday: "short" });
+
+  // Split so the time can never wrap: "8:00" is the number, "am" rides
+  // beneath it with the day. A rail that reflows stops being a rail.
+  const hhmm = when
     .toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    .toLowerCase();
+    .replace(/\s*[AP]M$/i, "");
+  const meridiem = when.getHours() < 12 ? "am" : "pm";
 
   return (
-    <section className="flex gap-4 py-4">
-      {/* The time is printed once for the whole slot, because four
-          matches share it. Repeating it on each row would be four
-          copies of the same fact. */}
-      <header className="w-16 shrink-0 pt-0.5">
-        <p className="text-[15px] font-bold leading-none tabular-nums text-stone-900">
-          {time}
+    <section className="flex gap-3.5 py-4">
+      <header className="w-[3.25rem] shrink-0 pt-px">
+        <p className="text-[17px] font-bold leading-none tabular-nums text-stone-900">
+          {hhmm}
         </p>
-        <p className="mt-1 text-[11px] leading-none text-stone-500">{day}</p>
+        <p className="mt-1 text-[11px] leading-tight text-stone-500">
+          {meridiem}
+          <br />
+          {day}
+        </p>
       </header>
 
-      <div className="min-w-0 flex-1 space-y-3">
+      <div className="min-w-0 flex-1 space-y-3.5">
         {games.map((game) => (
           <Fixture key={game.id} match={game} signedIn={signedIn} />
         ))}
@@ -151,76 +148,45 @@ function Fixture({
   }
 
   const scoreBox =
-    "w-14 rounded-md border-2 border-stone-900/15 bg-stone-0 py-2 text-center text-xl font-bold tabular-nums text-stone-900 focus:border-stone-900/40 focus:outline-none";
+    "w-[3.25rem] rounded-md border-2 border-stone-900/15 bg-stone-0 py-1.5 text-center text-xl font-bold tabular-nums text-stone-900 focus:border-stone-900/40 focus:outline-none";
 
   return (
     <div>
-      <div className="flex items-baseline gap-3">
-        <div className="min-w-0 flex-1">
-          {match.teams_announced ? (
-            <p
-              className="truncate text-[15px] font-semibold leading-snug text-stone-900"
-              dir="auto"
-            >
-              {match.home_team}{" "}
-              <span className="font-normal text-stone-400">v</span>{" "}
-              {match.away_team}
-            </p>
-          ) : (
-            <p className="text-[15px] font-medium leading-snug text-stone-400">
-              Teams not drawn yet
-            </p>
-          )}
+      {/*
+        The fixture gets the full width and is allowed to wrap.
+        "Washington D.C. v Pennsylvania" beside a score and a button is
+        three things competing for a phone's width, and the team names
+        lose — which is the one thing on the row nobody can afford to
+        have truncated.
+      */}
+      {match.teams_announced ? (
+        <p
+          className="text-[15px] font-semibold leading-snug text-stone-900"
+          dir="auto"
+        >
+          {match.home_team}{" "}
+          <span className="font-normal text-stone-400">v</span>{" "}
+          {match.away_team}
+        </p>
+      ) : (
+        <p className="text-[15px] font-medium leading-snug text-stone-400">
+          Teams not drawn yet
+        </p>
+      )}
 
-          {/* Only what isn't already obvious from position on the sheet:
-              which field to stand at. */}
-          {match.field_label && (
-            <p className="mt-0.5 text-[11px] text-stone-500">
-              {match.field_label}
-              {match.group_label ? `, ${match.group_label}` : ""}
-            </p>
-          )}
-        </div>
+      {match.field_label && (
+        <p className="mt-0.5 text-[11px] text-stone-500">
+          {match.field_label}
+          {match.group_label ? `, ${match.group_label}` : ""}
+        </p>
+      )}
 
-        {saved && !open && (
-          <p className="shrink-0 text-[15px] font-bold tabular-nums text-emerald-800">
-            {saved[0]}
-            {"\u2013"}
-            {saved[1]}
-          </p>
-        )}
-
-        {!saved && !open && signedIn && match.teams_announced && (
-          <button
-            onClick={() => setOpen(true)}
-            className="shrink-0 rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
-          >
-            Pick
-          </button>
-        )}
-
-        {saved && !open && signedIn && (
-          <button
-            onClick={() => setOpen(true)}
-            className="shrink-0 text-[13px] font-medium text-stone-500 underline underline-offset-2"
-          >
-            Change
-          </button>
-        )}
-
-        {!signedIn && match.teams_announced && (
-          <Link
-            href={`/signup?next=${encodeURIComponent("/gate")}`}
-            className="shrink-0 rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
-          >
-            Pick
-          </Link>
-        )}
-      </div>
-
-      {open && signedIn && (
-        <div className="mt-2.5">
-          <div className="flex items-center gap-2">
+      {open && signedIn ? (
+        <div className="mt-2">
+          {/* Wraps rather than overflowing: on a narrow phone the
+              buttons drop to a second line instead of Cancel sliding
+              off the edge. */}
+          <div className="flex flex-wrap items-center gap-2">
             <input
               inputMode="numeric"
               value={home}
@@ -240,21 +206,60 @@ function Fixture({
             <button
               onClick={save}
               disabled={saving || home === "" || away === ""}
-              className="ml-1 rounded-md bg-emerald-800 px-4 py-2.5 text-[13px] font-bold text-stone-0 disabled:opacity-40"
+              className="rounded-md bg-emerald-800 px-4 py-2 text-[13px] font-bold text-stone-0 disabled:opacity-40"
             >
               {saving ? "Saving" : "Save"}
             </button>
 
             <button
               onClick={() => setOpen(false)}
-              className="text-[13px] font-medium text-stone-500"
+              className="px-1 text-[13px] font-medium text-stone-500"
             >
               Cancel
             </button>
           </div>
 
-          {error && (
-            <p className="mt-1.5 text-[13px] text-red-700">{error}</p>
+          {error && <p className="mt-1.5 text-[13px] text-red-700">{error}</p>}
+        </div>
+      ) : (
+        <div className="mt-1.5 flex items-center gap-3">
+          {saved && (
+            <p className="text-[17px] font-bold leading-none tabular-nums text-emerald-800">
+              {saved[0]}
+              {"\u2013"}
+              {saved[1]}
+            </p>
+          )}
+
+          {!signedIn && match.teams_announced && (
+            <Link
+              href={`/signup?next=${encodeURIComponent("/gate")}`}
+              className="rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
+            >
+              Pick
+            </Link>
+          )}
+
+          {signedIn && match.teams_announced && !saved && (
+            <button
+              onClick={() => setOpen(true)}
+              className="rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
+            >
+              Pick
+            </button>
+          )}
+
+          {signedIn && saved && (
+            <button
+              onClick={() => setOpen(true)}
+              className="text-[13px] font-medium text-stone-500 underline underline-offset-2"
+            >
+              Change
+            </button>
+          )}
+
+          {!match.teams_announced && (
+            <p className="text-[13px] text-stone-400">Pick when they drop</p>
           )}
         </div>
       )}

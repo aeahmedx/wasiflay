@@ -151,19 +151,19 @@ export function GateView({
 
         {/* Below the wordmark: it reads as a credit line, and a credit
             line goes under the name it credits. */}
-        <p className="mt-0.5 text-center text-sm italic text-on-brand opacity-60">
+        <p className="mt-1 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-on-brand opacity-70">
           presents
         </p>
 
-        <h1 className="mt-3 text-center text-[2.6rem] font-black leading-[0.95] tracking-[-0.02em] text-on-brand">
-          Call every
+        <h1 className="mt-3 text-center text-[2.1rem] font-black leading-[1.02] tracking-[-0.02em] text-on-brand">
+          2026 Tournament
           <br />
-          score.
+          Experience
         </h1>
 
-        <p className="mt-4 text-center text-[15px] leading-relaxed text-on-brand opacity-75">
-          Twenty-five years of this tournament and nobody has ever won
-          the picks. Two days, thirty-one matches, one board.
+        <p className="mt-3 text-center text-[15px] leading-relaxed text-on-brand opacity-80">
+          Call every score. Argue in the rooms. Finish top of a board
+          nobody has ever topped.
         </p>
 
         <Link
@@ -190,9 +190,14 @@ export function GateView({
           </div>
 
           {matches.length === 0 ? (
-            <p className="py-6 text-center text-[15px] text-stone-500">
-              Fixtures go up here as soon as the schedule lands.
-            </p>
+            <div className="py-5 text-center">
+              <p className="text-xl font-bold text-stone-900">
+                Announced soon
+              </p>
+              <p className="mt-1 text-sm text-stone-600">
+                Fixtures go up here as soon as the schedule lands.
+              </p>
+            </div>
           ) : (
             <>
               <GateMatchList matches={matches} signedIn={signedIn} />
@@ -204,9 +209,10 @@ export function GateView({
                 whole thing fair.
               */}
               <p className="mt-3 border-t border-stone-900/10 pt-3 text-[13px] leading-relaxed text-stone-500">
-                Nobody knows anything yet. That&apos;s the fun of it —
-                change your picks any time before kickoff, and more
-                matches open through the week.
+                Nobody knows anything yet — that&apos;s the fun. Change
+                your picks any time before kickoff.
+                <br />
+                More matches open through the week.
               </p>
             </>
           )}
@@ -216,7 +222,7 @@ export function GateView({
               href={`/signup?next=${encodeURIComponent("/gate")}`}
               className="mt-3 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
             >
-              Sign in to save your picks
+              Make your predictions
             </Link>
           )}
 
@@ -226,11 +232,11 @@ export function GateView({
                 {names.slice(0, 3).join(", ")}
               </span>
               {others > 0 ? (
-                <> and {others} others have picked already</>
+                <> and {others} others have already picked</>
               ) : names.length === 1 ? (
-                <> has picked already</>
+                <> has already picked</>
               ) : (
-                <> have picked already</>
+                <> have already picked</>
               )}
             </p>
           )}
@@ -300,11 +306,11 @@ export function GateView({
             <p className="text-lg font-bold text-on-brand">Opening…</p>
           ) : untilOpen !== null ? (
             <>
-              <p className="text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
-                {formatCountdown(untilOpen)}
+              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
+                Everything opens in
               </p>
-              <p className="mt-1.5 text-sm text-on-brand opacity-70">
-                until everything opens
+              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
+                {formatCountdown(untilOpen)}
               </p>
             </>
           ) : (
@@ -313,9 +319,8 @@ export function GateView({
             </p>
           )}
 
-          <p className="mt-3 text-[13px] leading-relaxed text-on-brand opacity-60">
-            Then the rooms open, the board goes live, and the rest of the
-            app comes with it.
+          <p className="mt-3 text-xs font-medium text-on-brand opacity-60">
+            Live match rooms · predictions · the community feed
           </p>
         </div>
       </div>
