@@ -23,7 +23,6 @@ export default process.env.NEXT_PUBLIC_SENTRY_DSN
       // Source maps are uploaded then deleted, so a stack trace is
       // readable in Sentry without shipping the maps to the browser.
       widenClientFileUpload: true,
-      disableLogger: true,
       // Routes Sentry's own requests through your domain, so ad blockers
       // don't silently swallow the error reports you installed this for.
       tunnelRoute: "/monitoring",
