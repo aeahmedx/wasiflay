@@ -29,18 +29,24 @@ const STEPS = [
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Where to land after sign-in. Set from ?next= so someone who hits the
-  // sign-in prompt inside a room returns to that room, not to Home.
-  const [next, setNext] = useState("/");
-
-  // Read the callback error and return path from the URL directly.
-  // Deliberately NOT useSearchParams() — that hook opts the route out of
-  // prerendering and fails the production build unless wrapped in Suspense.
+  /**
+   * Surfaces the error left in the URL by a failed callback.
+   *
+   * Deferred by a tick rather than set straight from the effect body:
+   * an update during mount costs a render pass before paint, and this
+   * message only matters on the rare load that follows a failed
+   * sign-in.
+   *
+   * Deliberately not useSearchParams() — that hook opts the route out
+   * of static rendering and fails the production build unless it sits
+   * under a Suspense boundary.
+   */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("error");
-    if (code && ERRORS[code]) setError(ERRORS[code]);
-    setNext(safeNext(params.get("next")));
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (!code || !ERRORS[code]) return;
+
+    const timer = setTimeout(() => setError(ERRORS[code]), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   async function signInWithGoogle() {
@@ -51,7 +57,11 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        // Read here rather than held in state: it is only ever the
+        // destination, never something rendered.
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          safeNext(new URLSearchParams(window.location.search).get("next"))
+        )}`,
       },
     });
 
@@ -142,10 +152,6 @@ export default function SignupPage() {
           </svg>
           {loading ? "Opening Google…" : "Continue with Google"}
         </button>
-
-        <p className="mt-3 text-center text-xs text-stone-500">
-          Free, no payment, nothing to cancel.
-        </p>
 
         <p className="mt-6 text-xs leading-relaxed text-stone-500">
           Wasif Lay is for coordination, not conflict. Political argument
