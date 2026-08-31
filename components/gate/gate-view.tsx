@@ -9,6 +9,7 @@ import { Wordmark } from "@/components/wordmark";
 import { GateShare } from "@/components/gate/gate-share";
 import { GateInstall } from "@/components/gate/gate-install";
 import { GateMatchList } from "@/components/gate/gate-match-list";
+import { ClaimPicks } from "@/components/gate/claim-picks";
 import type { GateMatch } from "@/lib/queries/gate";
 
 /** How often to recheck once the clock has passed opening time. */
@@ -141,6 +142,8 @@ export function GateView({
         />
       </div>
 
+      <ClaimPicks signedIn={signedIn} />
+
       <div
         className="mx-auto -mt-6 flex w-full max-w-sm flex-col px-6"
         style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom))" }}
@@ -165,37 +168,6 @@ export function GateView({
           Call every score. Argue in the rooms. Finish top of a board
           nobody has ever topped.
         </p>
-
-        {/* --- the countdown ---------------------------------------
-            Directly under the promise and above the first thing to tap.
-            At the foot of the page it sat below the fold on most
-            phones, which is a strange place for the one number the
-            page exists to show. */}
-        <div className="mt-6 text-center">
-          {opensSoon ? (
-            <p className="text-lg font-bold text-on-brand">Opening…</p>
-          ) : untilOpen !== null ? (
-            <>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
-                Everything opens in
-              </p>
-              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
-                {formatCountdown(untilOpen)}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm font-medium text-on-brand opacity-70">
-              Opening soon
-            </p>
-          )}
-        </div>
-
-        <Link
-          href="/welcome"
-          className="mx-auto mt-5 block rounded-lg border-2 on-brand-border px-7 py-2.5 text-sm font-bold text-on-brand"
-        >
-          Welcome
-        </Link>
 
         {/* --- the schedule sheet ---------------------------------- */}
         <section className="mt-8 rounded-lg bg-stone-0 px-4 pb-4 pt-3.5">
@@ -265,6 +237,37 @@ export function GateView({
             </p>
           )}
         </section>
+
+        {/* --- the countdown ---------------------------------------
+            Directly under the promise and above the first thing to tap.
+            At the foot of the page it sat below the fold on most
+            phones, which is a strange place for the one number the
+            page exists to show. */}
+        <div className="mt-6 text-center">
+          {opensSoon ? (
+            <p className="text-lg font-bold text-on-brand">Opening…</p>
+          ) : untilOpen !== null ? (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
+                Everything opens in
+              </p>
+              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
+                {formatCountdown(untilOpen)}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-on-brand opacity-70">
+              Opening soon
+            </p>
+          )}
+        </div>
+
+        <Link
+          href="/welcome"
+          className="mx-auto mt-5 block rounded-lg border-2 on-brand-border px-7 py-2.5 text-sm font-bold text-on-brand"
+        >
+          Welcome
+        </Link>
 
         {/* Pointing at the official app costs nothing and makes this
             look like a good citizen of the weekend rather than a rival

@@ -22,7 +22,11 @@ const ERRORS: Record<string, string> = {
  */
 const STEPS = [
   { n: 1, label: "Sign in", note: "Ten seconds with Google" },
-  { n: 2, label: "Call the scores", note: "Every match, before kickoff" },
+  {
+    n: 2,
+    label: "Call the scores",
+    note: "Change them any time before kickoff",
+  },
   { n: 3, label: "Talk your talk", note: "Live rooms while it's playing" },
 ];
 

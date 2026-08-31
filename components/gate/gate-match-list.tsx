@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { savePendingPicks } from "@/lib/pending-picks";
 import type { GateMatch } from "@/lib/queries/gate";
 
 /**
@@ -117,6 +118,21 @@ function Fixture({
       return;
     }
 
+    /**
+     * Not signed in: keep the pick and go and make an account.
+     *
+     * Asking for a score before asking for an account inverts the
+     * order deliberately. Someone who has already chosen 2–1 has
+     * committed something, and people finish sign-ups they have
+     * already invested in. The pick travels with them and lands the
+     * moment they arrive back.
+     */
+    if (!signedIn) {
+      savePendingPicks([{ matchId: match.id, home: h, away: a }]);
+      window.location.href = `/signup?next=${encodeURIComponent("/gate")}`;
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -181,7 +197,7 @@ function Fixture({
         </p>
       )}
 
-      {open && signedIn ? (
+      {open ? (
         <div className="mt-2">
           {/* Wraps rather than overflowing: on a narrow phone the
               buttons drop to a second line instead of Cancel sliding
@@ -208,7 +224,7 @@ function Fixture({
               disabled={saving || home === "" || away === ""}
               className="rounded-md bg-emerald-800 px-4 py-2 text-[13px] font-bold text-stone-0 disabled:opacity-40"
             >
-              {saving ? "Saving" : "Save"}
+              {saving ? "Saving" : signedIn ? "Save" : "Save my pick"}
             </button>
 
             <button
@@ -232,12 +248,12 @@ function Fixture({
           )}
 
           {!signedIn && match.teams_announced && (
-            <Link
-              href={`/signup?next=${encodeURIComponent("/gate")}`}
+            <button
+              onClick={() => setOpen(true)}
               className="rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
             >
               Pick
-            </Link>
+            </button>
           )}
 
           {signedIn && match.teams_announced && !saved && (
