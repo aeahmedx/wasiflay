@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { SplashScreen } from "@/components/splash-screen";
 import { ActivityPing, ACTIVE_COOKIE } from "@/components/activity-ping";
+import { PostHogProvider } from "@/components/analytics/posthog-provider";
 
 const SITE = "https://www.wasiflay.com";
 
@@ -94,7 +95,7 @@ export default async function RootLayout({
       <body className="antialiased">
         {coldStart && <SplashScreen />}
         <ActivityPing />
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
       </body>
     </html>
   );
