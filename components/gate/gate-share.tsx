@@ -18,7 +18,7 @@ const SITE = "https://www.wasiflay.com";
  * message says why, the card says what.
  */
 const INVITE =
-  "Wasif Lay — call the scores for the tournament, whole thing's free. " +
+  "Wasif Lay — call the scores for the tournament. " +
   "Nobody's won it yet so whoever tops the board is the first name on it.";
 
 export function GateShare() {
