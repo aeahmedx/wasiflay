@@ -14,7 +14,6 @@ import { SignOutButton } from "@/app/(main)/sign-out-button";
 import { AddToHomeScreen } from "@/components/add-to-home-screen";
 import { BlockButton } from "@/components/block-button";
 import { AccountSettings } from "@/components/account-settings";
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
 import { ViewTabs } from "@/components/view-tabs";
 import { PickList } from "@/components/matches/pick-list";
