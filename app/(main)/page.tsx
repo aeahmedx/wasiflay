@@ -12,6 +12,7 @@ import {
 import { PostFeed } from "@/components/posts/post-feed";
 import { EventList } from "@/components/events/event-list";
 import { Wordmark } from "@/components/wordmark";
+import { NowBlock } from "@/components/matches/now-block";
 import { cookies } from "next/headers";
 import { getUpcomingEvents } from "@/lib/queries/events";
 import { RegionPicker } from "@/components/region-picker";
@@ -135,6 +136,10 @@ export default async function HomePage({
           </svg>
           What do you need?
         </Link>
+
+        {/* Renders nothing when there are no matches, so the app is
+            unchanged outside a tournament. */}
+        <NowBlock userId={profile?.id ?? null} />
 
         <div className="mb-3 flex items-center justify-between gap-2">
           <ViewTabs
