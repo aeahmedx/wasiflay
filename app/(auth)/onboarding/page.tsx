@@ -193,7 +193,7 @@ export default function OnboardingPage() {
               dir="auto"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Conshohocken"
+              placeholder="New York City"
               className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
           </div>
