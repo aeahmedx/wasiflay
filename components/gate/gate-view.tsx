@@ -50,6 +50,18 @@ export function GateView({
    */
   const [pendingCount, setPendingCount] = useState(0);
 
+  /**
+   * Picks kept in the cookie survive a reload, so the count has to read
+   * them on arrival rather than starting at zero and waiting for a new
+   * one. Deferred because the server cannot see the cookie, and
+   * rendering a different number on each side is a hydration mismatch.
+   */
+  useEffect(() => {
+    if (signedIn) return;
+    const timer = setTimeout(() => setPendingCount(countPendingPicks()), 0);
+    return () => clearTimeout(timer);
+  }, [signedIn]);
+
   const untilOpen = useCountdown(state.opens_at);
 
   /**

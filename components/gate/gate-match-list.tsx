@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { addPendingPick } from "@/lib/pending-picks";
+import { addPendingPick, readPendingPicks } from "@/lib/pending-picks";
 import type { GateMatch } from "@/lib/queries/gate";
 
 /**
@@ -115,9 +115,31 @@ function Fixture({
   const [away, setAway] = useState(String(match.my_away ?? ""));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<[number, number] | null>(
-    match.my_home !== null ? [match.my_home, match.my_away ?? 0] : null
-  );
+  const [saved, setSaved] = useState<[number, number] | null>(() => {
+    if (match.my_home !== null) return [match.my_home, match.my_away ?? 0];
+    return null;
+  });
+
+  /**
+   * Picks made before signing in live in a cookie, so they survive a
+   * reload — but the row was only ever reading the server. That left
+   * the count below saying "2 predictions" while every fixture showed
+   * nothing picked.
+   *
+   * Read after mount rather than in the initialiser: the server has no
+   * cookie access here, and rendering different values on each side is
+   * a hydration mismatch.
+   */
+  useEffect(() => {
+    if (signedIn || match.my_home !== null) return;
+
+    const timer = setTimeout(() => {
+      const mine = readPendingPicks().find((p) => p.matchId === match.id);
+      if (mine) setSaved([mine.home, mine.away]);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [signedIn, match.id, match.my_home]);
 
   async function save() {
     const h = Number(home);
