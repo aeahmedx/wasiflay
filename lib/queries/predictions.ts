@@ -153,6 +153,49 @@ export async function getLiveMatches(
 }
 
 /**
+ * Every match sharing the next kickoff time.
+ *
+ * Four fields run simultaneously, so a "next match" is really a next
+ * *slot* of four. Treating the slot as the unit is what keeps the
+ * tournament block a fixed size: at most four live and four next, no
+ * matter whether the weekend holds eight fixtures or eighty.
+ */
+export async function getNextSlot(
+  client: SupabaseClient
+): Promise<Match[]> {
+  const { data, error } = await client
+    .from("public_matches")
+    .select(MATCH_FIELDS)
+    .neq("status", "finished")
+    .gt("kicks_off_at", new Date().toISOString())
+    .order("kicks_off_at", { ascending: true })
+    .limit(8);
+
+  if (error) return [];
+
+  const rows = (data ?? []) as unknown as Match[];
+  if (rows.length === 0) return [];
+
+  // Everything at the earliest time, and nothing from the slot after.
+  const first = rows[0].kicks_off_at;
+  return rows.filter((m) => m.kicks_off_at === first);
+}
+
+/** How many fixtures are still to come, for the link out. */
+export async function countUpcoming(
+  client: SupabaseClient
+): Promise<number> {
+  const { count, error } = await client
+    .from("public_matches")
+    .select("id", { count: "exact", head: true })
+    .neq("status", "finished")
+    .gt("kicks_off_at", new Date().toISOString());
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
  * The soonest match that hasn't kicked off yet.
  *
  * Deliberately not filtered to status = 'scheduled'. A match locked

@@ -4,13 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { Match, Standing } from "@/lib/queries/predictions";
-import {
-  formatCountdown,
-  useCountdown,
-} from "@/lib/hooks/use-now";
 import { PredictForm } from "@/components/matches/predict-form";
-import { MatchRow } from "@/components/matches/match-row";
 
 const HEADLINE: Record<string, string> = {
   exact: "Called it exactly",
@@ -21,68 +17,60 @@ const HEADLINE: Record<string, string> = {
 };
 
 /**
- * The tournament, in one block.
+ * The tournament, on the home screen.
  *
- * Previously this was two separate cards — a result and a next match —
- * stacked on top of each other, which read as two unrelated
- * announcements rather than one running story. It's one card now, in
- * the order the weekend actually happens: what just finished, what's on
- * next, where you stand.
+ * The size problem is solved by the schedule's own shape: four fields
+ * run at once, so a "next match" is really a next *slot* of four. The
+ * block shows at most one slot — which means at most four live rows and
+ * four upcoming ones, whether the weekend holds eight fixtures or
+ * eighty. It cannot grow, and it cannot miss anything, because the full
+ * list lives on /matches and is one tap away.
  *
- * Collapses to a single line, and can always be opened again. A
- * scoreboard people can permanently dismiss isn't a scoreboard.
+ * What it shows follows the moment rather than the schedule:
+ *
+ *   nothing at all      renders nothing
+ *   before kickoff      the next slot, pickable
+ *   during a match      what's playing, with rooms; the next slot folded
+ *   just after          the result, then the next slot
+ *   weekend over        the final, and the board
  */
 export function TournamentBlock({
   result,
   live,
-  recent,
-  next,
-  upcoming,
+  nextSlot,
+  upcomingCount,
   standing,
   userId,
   startCollapsed = false,
 }: {
   result: Match | null;
-  /** Everything being played right now. Was a single match, which meant
-   *  two of three simultaneous kickoffs were invisible. */
+  /** Everything being played right now. Capped by reality at four. */
   live: Match[];
-  /** Shown when nothing is live or upcoming, so the block never
-   *  disappears mid-tournament. */
-  recent: Match[];
-  /** The soonest match still open for picks. */
-  next: Match | null;
-  /** The rest of the open fixtures, behind a toggle. */
-  upcoming: Match[];
+  /** Every fixture sharing the next kickoff. Also four. */
+  nextSlot: Match[];
+  /** Everything still to come, for the link out. */
+  upcomingCount: number;
   standing: Standing | null;
   userId: string | null;
   startCollapsed?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+
   const [collapsed, setCollapsed] = useState(startCollapsed);
-  const [picking, setPicking] = useState(false);
+  const [picking, setPicking] = useState<string | null>(null);
+  const [justPicked, setJustPicked] = useState<Record<string, [number, number]>>(
+    {}
+  );
+
+  const isLive = live.length > 0;
+  const slotKickoff = nextSlot[0]?.kicks_off_at ?? null;
+  const left = useCountdown(slotKickoff);
 
   /**
-   * The pick just made, held locally until the server catches up.
-   *
-   * Without this, saving closes the form and nothing changes until
-   * router.refresh() returns — a second of the app looking like it
-   * ignored the tap.
-   */
-  const [justPicked, setJustPicked] = useState<[number, number] | null>(null);
-
-  const [showUpcoming, setShowUpcoming] = useState(false);
-  const left = useCountdown(next?.kicks_off_at ?? null);
-
-  /**
-   * Locking a match has to reach people who already have this open —
-   * otherwise the Predict button sits there and gets rejected on tap,
-   * which reads as broken rather than as too late.
-   */
-  /**
-   * Any match change — a lock, a result — has to reach people already
-   * looking at this. One channel for the whole table rather than one
-   * per match: simpler, and the row count here is tiny.
+   * A lock or a result has to reach people already looking at this.
+   * Predictions too — the counts and the standing move without any
+   * match itself changing.
    */
   useEffect(() => {
     const channel = supabase
@@ -92,8 +80,6 @@ export function TournamentBlock({
         { event: "*", schema: "public", table: "matches" },
         () => router.refresh()
       )
-      // Prediction counts and the standing line move without the match
-      // itself changing.
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "predictions" },
@@ -106,41 +92,18 @@ export function TournamentBlock({
     };
   }, [supabase, router]);
 
-  // Only truly empty — no matches at all — hides the block. Between
-  // the last game and the next fixture being added, results hold the
-  // space rather than the tournament vanishing from the app.
-  if (!result && live.length === 0 && !next && recent.length === 0) {
+  if (!result && live.length === 0 && nextSlot.length === 0) return null;
+
+  const kickedOff = left !== null && left <= 0;
+
+  function pickOf(match: Match): [number, number] | null {
+    const local = justPicked[match.id];
+    if (local) return local;
+    if (match.my_home !== null && match.my_away !== null) {
+      return [match.my_home, match.my_away];
+    }
     return null;
   }
-
-  // Kickoff passing closes picks with no round trip. The server agrees —
-  // match_is_open() reads the same clock. Before the first tick `left`
-  // is null, so we trust the server's own is_open until then.
-  const kickedOff = left !== null && left <= 0;
-  const open = Boolean(next?.is_open) && !kickedOff;
-
-  const serverPick =
-    next?.my_home !== null && next?.my_home !== undefined
-      ? ([next.my_home, next.my_away] as [number, number])
-      : null;
-
-  // Local wins until the server agrees, then they're the same value.
-  const pick = justPicked ?? serverPick;
-  const hasPick = pick !== null;
-
-  /**
-   * The strip above already shows the most recent finished match, so
-   * listing it again underneath said the same thing twice — which, with
-   * one finished match and nothing upcoming, was the whole block saying
-   * one thing twice.
-   *
-   * This version always renders the strip when there's a result (the
-   * whole block collapses rather than the strip dismissing on its own),
-   * so the filter is unconditional.
-   */
-  const olderResults = result
-    ? recent.filter((m) => m.id !== result.id)
-    : recent;
 
   function collapse() {
     if (result) {
@@ -149,26 +112,24 @@ export function TournamentBlock({
       }; SameSite=Lax`;
     }
     setCollapsed(true);
-    /**
-     * The cookie alone wasn't enough: navigating away and back served
-     * this from the router cache — a payload rendered before the cookie
-     * existed — so it reopened. Refreshing re-runs the server component,
-     * which reads the cookie.
-     */
+    // The cookie alone isn't enough — navigating back would serve a
+    // payload rendered before it existed.
     router.refresh();
   }
 
+  // ---- collapsed -------------------------------------------------
   if (collapsed) {
-    const summary =
-      live.length > 1
+    const summary = isLive
+      ? live.length > 1
         ? `${live.length} matches on now`
-        : live.length === 1
-        ? `${live[0].home_team} v ${live[0].away_team}`
-        : next
-        ? `${next.home_team} v ${next.away_team}`
-        : result
-        ? `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
-        : "";
+        : `${live[0].home_team} v ${live[0].away_team}`
+      : nextSlot.length > 0
+      ? nextSlot.length > 1
+        ? `${nextSlot.length} matches next`
+        : `${nextSlot[0].home_team} v ${nextSlot[0].away_team}`
+      : result
+      ? `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
+      : "";
 
     return (
       <button
@@ -176,7 +137,7 @@ export function TournamentBlock({
         className="mb-4 flex w-full items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-left"
       >
         <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-amber-900">
-          {live.length > 0 ? "Live" : "Tournament"}
+          {isLive ? "Live" : "Tournament"}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm text-stone-800" dir="auto">
           {summary}
@@ -189,6 +150,13 @@ export function TournamentBlock({
       </button>
     );
   }
+
+  const slotTime = slotKickoff
+    ? new Date(slotKickoff).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "";
 
   return (
     <section className="mb-5 overflow-hidden rounded-lg border border-amber-300 bg-amber-50">
@@ -230,12 +198,12 @@ export function TournamentBlock({
           </div>
 
           {(result.my_points ?? 0) > 0 && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center gap-3">
               <Link
                 href={`/create?type=announcement&q=${encodeURIComponent(
                   result.my_tier === "exact"
                     ? `Called it: ${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team}`
-                    : `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team} \u2014 I said ${result.my_home}\u2013${result.my_away}`
+                    : `${result.home_team} ${result.home_score}\u2013${result.away_score} ${result.away_team} — I said ${result.my_home}\u2013${result.my_away}`
                 )}`}
                 className="rounded-lg bg-amber-400 px-3.5 py-1.5 text-sm font-semibold text-on-brand"
               >
@@ -252,8 +220,8 @@ export function TournamentBlock({
         </div>
       )}
 
-      {/* --- being played right now ------------------------------- */}
-      {live.length > 0 && (
+      {/* --- being played right now -------------------------------- */}
+      {isLive && (
         <div className="border-b border-amber-200 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
             {live.length > 1 ? `${live.length} playing now` : "Playing now"}
@@ -261,24 +229,22 @@ export function TournamentBlock({
 
           <ul className="mt-1.5 space-y-2">
             {live.map((m) => {
-              const myPick =
-                m.my_home !== null
-                  ? `${m.my_home}\u2013${m.my_away}`
-                  : null;
-
+              const pick = pickOf(m);
               return (
                 <li key={m.id} className="flex items-center gap-2">
                   <Link
                     href={`/matches/${m.id}`}
-                    className="min-w-0 flex-1 truncate font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
+                    className="min-w-0 flex-1 font-semibold leading-snug text-stone-900 underline decoration-stone-400 underline-offset-4"
                     dir="auto"
                   >
                     {m.home_team} v {m.away_team}
                   </Link>
 
-                  {myPick && (
+                  {pick && (
                     <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-900">
-                      {myPick}
+                      {pick[0]}
+                      {"\u2013"}
+                      {pick[1]}
                     </span>
                   )}
 
@@ -297,180 +263,128 @@ export function TournamentBlock({
         </div>
       )}
 
-      {/* --- next one to pick --------------------------------------
-          Shown alongside live matches, not instead of them. Hiding it
-          while anything was playing meant the next fixture vanished
-          from the block — and because `upcoming` excludes whatever
-          `next` is, it fell out of that list too and the card claimed
-          nothing was scheduled. */}
-      {next && (
+      {/* --- the next slot -----------------------------------------
+          Shown in full when nothing is playing, folded to one line when
+          something is: during a match, the match is the only subject. */}
+      {nextSlot.length > 0 && (
         <div className="px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-              Next up
-            </span>
-            {!kickedOff && left !== null && (
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
+              {nextSlot.length > 1
+                ? `Next up · ${slotTime}`
+                : "Next up"}
+            </p>
+            {left !== null && !kickedOff && (
               <span className="text-xs font-medium tabular-nums text-amber-900">
                 {formatCountdown(left)}
               </span>
             )}
           </div>
 
-          <Link
-            href={`/matches/${next.id}`}
-            className="mt-1 block text-lg font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
-            dir="auto"
-          >
-            {next.home_team} v {next.away_team}
-          </Link>
-
-          {/* Shown only once the number flatters — "2 predictions" reads
-              as an empty app, nothing reads as a fresh one. */}
-          {next.prediction_count >= 10 && (
-            <p className="mt-0.5 text-sm text-stone-700">
-              {next.prediction_count} predictions
+          {isLive ? (
+            <p className="mt-1 text-sm text-stone-700">
+              {nextSlot.length}{" "}
+              {nextSlot.length === 1 ? "match" : "matches"} at {slotTime}
+              {" · "}
+              <Link
+                href="/matches"
+                className="underline underline-offset-4"
+              >
+                pick them
+              </Link>
             </p>
-          )}
-
-          {picking && userId ? (
-            <div className="mt-3">
-              <PredictForm
-                match={next}
-                onDoneAction={(h, a) => {
-                  setJustPicked([h, a]);
-                  setPicking(false);
-                }}
-              />
-            </div>
           ) : (
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {hasPick && pick && (
-                <span className="rounded-full bg-stone-0 px-3 py-1.5 text-sm font-medium text-stone-900">
-                  You said {pick[0]}
-                  {"\u2013"}
-                  {pick[1]}
-                </span>
-              )}
+            <ul className="mt-2 space-y-2.5">
+              {nextSlot.map((m) => {
+                const pick = pickOf(m);
+                const open = m.is_open && !kickedOff;
 
-              {open &&
-                (userId ? (
-                  <>
-                    <button
-                      onClick={() => setPicking(true)}
-                      className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0"
-                    >
-                      {hasPick ? "Change it" : "Predict the score"}
-                    </button>
-
-                    {/* Calling a score before kickoff is the one brag
-                        that carries risk, which is exactly why people
-                        post it. Writes into the feed rather than opening
-                        the share sheet — a share leaves the app and
-                        leaves nothing behind. */}
-                    {hasPick && pick && next && (
-                      <Link
-                        href={`/create?type=announcement&q=${encodeURIComponent(
-                          `Calling it: ${next.home_team} ${pick[0]}\u2013${pick[1]} ${next.away_team}`
-                        )}`}
-                        className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-on-brand"
+                if (picking === m.id && userId) {
+                  return (
+                    <li key={m.id}>
+                      <p
+                        className="font-semibold leading-snug text-stone-900"
+                        dir="auto"
                       >
-                        Share it
-                      </Link>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href="/signup?next=%2F"
-                    className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-stone-0"
-                  >
-                    Sign in to predict
-                  </Link>
-                ))}
+                        {m.home_team} v {m.away_team}
+                      </p>
+                      <div className="mt-2">
+                        <PredictForm
+                          match={m}
+                          onDoneAction={(h, a) => {
+                            setJustPicked((p) => ({ ...p, [m.id]: [h, a] }));
+                            setPicking(null);
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                }
 
-              {!open && !hasPick && (
-                <span className="text-sm text-stone-700">Picks closed</span>
-              )}
-            </div>
+                return (
+                  <li key={m.id} className="flex items-center gap-2">
+                    <Link
+                      href={`/matches/${m.id}`}
+                      className="min-w-0 flex-1 font-semibold leading-snug text-stone-900"
+                      dir="auto"
+                    >
+                      {m.home_team} v {m.away_team}
+                    </Link>
+
+                    {pick && (
+                      <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-900">
+                        {pick[0]}
+                        {"\u2013"}
+                        {pick[1]}
+                      </span>
+                    )}
+
+                    {open &&
+                      (userId ? (
+                        <button
+                          onClick={() => setPicking(m.id)}
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                            pick
+                              ? "bg-stone-0 text-stone-700"
+                              : "bg-amber-400 text-on-brand"
+                          }`}
+                        >
+                          {pick ? "Change" : "Pick"}
+                        </button>
+                      ) : (
+                        <Link
+                          href="/signup?next=%2F"
+                          className="shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-on-brand"
+                        >
+                          Pick
+                        </Link>
+                      ))}
+
+                    {!open && !pick && (
+                      <span className="shrink-0 text-xs text-stone-500">
+                        Closed
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {/* Everything beyond this slot is one tap away, never a list
+              that grows with the schedule. */}
+          {upcomingCount > nextSlot.length && (
+            <Link
+              href="/matches"
+              className="mt-2.5 block text-sm text-stone-700 underline underline-offset-4"
+            >
+              {upcomingCount - nextSlot.length} more still to come
+            </Link>
           )}
         </div>
       )}
 
-      {/* --- results, when there's nothing more current ------------- */}
-      {live.length === 0 && !next && olderResults.length > 0 && (
-        <div className="border-b border-amber-200 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-            {olderResults.length > 1 ? "Earlier results" : "Earlier result"}
-          </p>
-
-          <ul className="mt-1.5 space-y-2">
-            {olderResults.map((m) => (
-              <li key={m.id} className="flex items-center gap-2">
-                <Link
-                  href={`/matches/${m.id}`}
-                  className="min-w-0 flex-1 truncate font-semibold text-stone-900 underline decoration-stone-400 underline-offset-4"
-                  dir="auto"
-                >
-                  {m.home_team} {m.home_score}
-                  {"\u2013"}
-                  {m.away_score} {m.away_team}
-                </Link>
-
-                {(m.my_points ?? 0) > 0 ? (
-                  <span className="shrink-0 rounded-full bg-emerald-800 px-2.5 py-0.5 text-sm font-semibold text-stone-0">
-                    +{m.my_points}
-                  </span>
-                ) : m.my_home !== null ? (
-                  <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-600">
-                    {m.my_home}
-                    {"\u2013"}
-                    {m.my_away}
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* --- the rest, folded away --------------------------------- */}
-      <div className="border-t border-amber-200">
-        {upcoming.length > 0 ? (
-          <>
-            <button
-              onClick={() => setShowUpcoming((v) => !v)}
-              aria-expanded={showUpcoming}
-              className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm text-stone-700"
-            >
-              <span>
-                {upcoming.length} more{" "}
-                {upcoming.length === 1 ? "match" : "matches"} to pick
-              </span>
-              <span className="text-stone-500">
-                {showUpcoming ? "Hide" : "Show"}
-              </span>
-            </button>
-
-            {showUpcoming && (
-              <ul className="space-y-2 px-4 pb-3">
-                {upcoming.map((m) => (
-                  <li key={m.id}>
-                    <MatchRow match={m} userId={userId} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        ) : null}
-      </div>
-
-      {/*
-        The two things worth doing next, given their own row.
-
-        These were scattered through the sections above as text links,
-        which made the block read as a pile of options rather than a
-        scoreboard. Everything else in here is contextual — a pick, a
-        room — and belongs beside the thing it acts on.
-      */}
+      {/* --- where you stand --------------------------------------- */}
       <div className="border-t border-amber-200 px-4 py-3">
         {standing && standing.played > 0 && (
           <p className="mb-2.5 text-sm text-stone-700">
@@ -481,9 +395,6 @@ export function TournamentBlock({
           </p>
         )}
 
-        {/* Navigation only. Post it lives on the result above, beside
-            the thing it posts about — two of them meant the same action
-            twice on one card. */}
         <div className="flex gap-2">
           <Link
             href="/matches"
@@ -491,7 +402,6 @@ export function TournamentBlock({
           >
             All matches
           </Link>
-
           <Link
             href="/leaderboard"
             className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
@@ -507,10 +417,7 @@ export function TournamentBlock({
           >
             How it works
           </Link>
-          <button
-            onClick={collapse}
-            className="text-xs text-stone-500"
-          >
+          <button onClick={collapse} className="text-xs text-stone-500">
             Hide
           </button>
         </div>
