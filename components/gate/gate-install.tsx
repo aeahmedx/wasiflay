@@ -25,8 +25,11 @@ export function GateInstall() {
     useInstall();
   const [showSteps, setShowSteps] = useState(false);
 
-  if (installed || cannotInstall) return null;
-  if (!canPromptNative && !isIOSSafari) return null;
+  // Only hidden once it's actually installed — there's nothing left to
+  // say at that point. Every other browser gets the card, because
+  // silence looks like the feature doesn't exist rather than like the
+  // browser can't do it.
+  if (installed) return null;
 
   return (
     <div className="mt-5 rounded-lg bg-stone-0 px-4 py-4">
@@ -40,7 +43,12 @@ export function GateInstall() {
         day instead of hunting for a link.
       </p>
 
-      {canPromptNative ? (
+      {cannotInstall ? (
+        <p className="mt-3 rounded-lg bg-stone-100 px-4 py-3 text-sm leading-relaxed text-stone-600">
+          Open wasiflay.com in Safari on iPhone, or Chrome on Android, and
+          this becomes a one tap install.
+        </p>
+      ) : canPromptNative ? (
         <button
           type="button"
           onClick={promptInstall}
