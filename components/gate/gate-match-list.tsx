@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { addPendingPick } from "@/lib/pending-picks";
 import type { GateMatch } from "@/lib/queries/gate";
@@ -21,8 +20,8 @@ export function GateMatchList({
 }: {
   matches: GateMatch[];
   signedIn: boolean;
-  /** Fired when a signed-out visitor saves a pick, so the sign-up
-   *  button below can wake up. */
+  /** Fired when a signed-out visitor saves a pick, so the button
+   *  below can wake up. */
   onPickedAction?: () => void;
 }) {
   const slots = useMemo(() => {
@@ -68,7 +67,7 @@ function Slot({
 
   // Split so the time can never wrap: "8:00" is the number, "am" rides
   // beneath it with the day. A rail that reflows stops being a rail.
-  const hhmm = when
+  const clock = when
     .toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
     .replace(/\s*[AP]M$/i, "");
   const meridiem = when.getHours() < 12 ? "am" : "pm";
@@ -77,7 +76,7 @@ function Slot({
     <section className="flex gap-3.5 py-4">
       <header className="w-[3.25rem] shrink-0 pt-px">
         <p className="text-[17px] font-bold leading-none tabular-nums text-stone-900">
-          {hhmm}
+          {clock}
         </p>
         <p className="mt-1 text-[11px] leading-tight text-stone-500">
           {meridiem}
@@ -135,7 +134,7 @@ function Fixture({
     /**
      * Not signed in: keep the pick here and show it saved.
      *
-     * Redirecting to sign-up the moment someone types a score
+     * Sending someone off to sign up the moment someone types a score
      * interrupts them mid-thought — they came to pick, not to make an
      * account. So the picks accumulate on the page and the account
      * comes once, at the bottom, when they have finished.

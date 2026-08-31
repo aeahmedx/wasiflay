@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
@@ -32,7 +32,6 @@ export function GateView({
   state,
   matches,
   signedIn,
-  userId,
 }: {
   state: GateState;
   /** The fixtures revealed so far. Grows as the week goes. */
@@ -42,8 +41,16 @@ export function GateView({
 }) {
   const router = useRouter();
 
+  /**
+   * How many picks a signed-out visitor has made on this page.
+   *
+   * Held in state rather than read from the cookie during render, so
+   * the save button below wakes up the moment a pick lands without the
+   * cookie being parsed on every render.
+   */
+  const [pendingCount, setPendingCount] = useState(0);
+
   const untilOpen = useCountdown(state.opens_at);
-  const untilKickoff = useCountdown(state.kicks_off_at);
 
   /**
    * Opening fires no database event — the app unlocks because a time
