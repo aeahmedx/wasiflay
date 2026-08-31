@@ -4,12 +4,14 @@ import { BackLink } from "@/components/back-link";
 import { createClient } from "@/lib/supabase/server";
 import { getGateState } from "@/lib/queries/gate";
 import { SUPPORT_EMAIL } from "@/lib/legal";
+import { OG_IMAGE } from "@/lib/og";
 
 export const metadata: Metadata = {
   title: "How the predictions work",
   description:
     "Predict the score, earn points, top the board. Free to play, no money involved.",
   openGraph: {
+    images: [OG_IMAGE],
     title: "How the predictions work · Wasif Lay",
     description:
       "Predict the score, earn points, top the board. Free to play, no money involved.",

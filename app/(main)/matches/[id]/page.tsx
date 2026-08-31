@@ -16,6 +16,7 @@ import { BackLink } from "@/components/back-link";
 import { LiveRefresh } from "@/components/live-refresh";
 import { ShareButton } from "@/components/share-button";
 import { MatchHeader } from "@/components/matches/match-header";
+import { OG_IMAGE } from "@/lib/og";
 
 export async function generateMetadata({
   params,
@@ -48,6 +49,7 @@ export async function generateMetadata({
     title,
     description,
     openGraph: {
+    images: [OG_IMAGE],
       title: `${title} · Wasif Lay`,
       description,
       type: "article",

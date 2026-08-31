@@ -5,23 +5,9 @@ import "./globals.css";
 import { SplashScreen } from "@/components/splash-screen";
 import { ActivityPing, ACTIVE_COOKIE } from "@/components/activity-ping";
 import { PostHogProvider } from "@/components/analytics/posthog-provider";
+import { OG_IMAGE } from "@/lib/og";
 
 const SITE = "https://www.wasiflay.com";
-
-/**
- * The image every share renders.
- *
- * Until now there wasn't one, so a link pasted into a WhatsApp group
- * arrived as a bare URL with a line of text — which in a community
- * that is rightly wary of links reads as spam. A picture of last
- * year's pitch invasion says what this is before anyone reads a word.
- */
-const OG_IMAGE = {
-  url: "/og-tournament.jpg",
-  width: 1200,
-  height: 630,
-  alt: "Wasif Lay · 2026 Tournament Experience",
-};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

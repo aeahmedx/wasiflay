@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
 import { getGateMatches, getGateState } from "@/lib/queries/gate";
 import { GateView } from "@/components/gate/gate-view";
+import { OG_IMAGE } from "@/lib/og";
 
 export const metadata: Metadata = {
   title: "2026 Tournament Experience",
   description:
     "Call the scores, talk through every match, and see where you finish. Opening soon.",
   openGraph: {
+    images: [OG_IMAGE],
     title: "Wasif Lay · 2026 Tournament Experience",
     description:
       "Call the scores, talk through every match, and see where you finish.",
