@@ -37,8 +37,6 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
-  const [next, setNext] = useState("/");
-
   const [regions, setRegions] = useState<Region[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [region, setRegion] = useState("");
@@ -50,8 +48,6 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setNext(safeNext(new URLSearchParams(window.location.search).get("next")));
-
     const supabase = createClient();
 
     getRegions(supabase)
@@ -95,7 +91,18 @@ export default function OnboardingPage() {
         date_of_birth: dob,
         country_flag: flag,
       });
-      router.replace(next);
+      /**
+       * Read at the moment it's used rather than held in state.
+       *
+       * It was being set from the URL at the top of an effect, which
+       * updates state during mount and costs a second render pass
+       * before paint. Nothing renders this value — it is only ever the
+       * destination after saving — so there was never a reason for it
+       * to be state.
+       */
+      router.replace(
+        safeNext(new URLSearchParams(window.location.search).get("next"))
+      );
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
