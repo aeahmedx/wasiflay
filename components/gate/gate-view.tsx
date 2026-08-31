@@ -166,6 +166,30 @@ export function GateView({
           nobody has ever topped.
         </p>
 
+        {/* --- the countdown ---------------------------------------
+            Directly under the promise and above the first thing to tap.
+            At the foot of the page it sat below the fold on most
+            phones, which is a strange place for the one number the
+            page exists to show. */}
+        <div className="mt-6 text-center">
+          {opensSoon ? (
+            <p className="text-lg font-bold text-on-brand">Opening…</p>
+          ) : untilOpen !== null ? (
+            <>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
+                Everything opens in
+              </p>
+              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
+                {formatCountdown(untilOpen)}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-on-brand opacity-70">
+              Opening soon
+            </p>
+          )}
+        </div>
+
         <Link
           href="/welcome"
           className="mx-auto mt-5 block rounded-lg border-2 on-brand-border px-7 py-2.5 text-sm font-bold text-on-brand"
@@ -302,29 +326,9 @@ export function GateView({
 
         <GateInstall />
 
-        {/* --- the countdown --------------------------------------- */}
-        <div className="mt-8 text-center">
-          {opensSoon ? (
-            <p className="text-lg font-bold text-on-brand">Opening…</p>
-          ) : untilOpen !== null ? (
-            <>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-on-brand opacity-70">
-                Everything opens in
-              </p>
-              <p className="mt-1 text-[2.5rem] font-black leading-none tabular-nums text-on-brand">
-                {formatCountdown(untilOpen)}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm font-medium text-on-brand opacity-70">
-              Opening soon
-            </p>
-          )}
-
-          <p className="mt-3 text-xs font-medium text-on-brand opacity-60">
-            Live match rooms · predictions · the community feed
-          </p>
-        </div>
+        <p className="mt-8 text-center text-xs font-medium text-on-brand opacity-60">
+          Live match rooms · predictions · the community feed
+        </p>
       </div>
     </main>
   );
