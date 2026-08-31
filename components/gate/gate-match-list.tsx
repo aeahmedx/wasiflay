@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { savePendingPicks } from "@/lib/pending-picks";
+import { addPendingPick } from "@/lib/pending-picks";
 import type { GateMatch } from "@/lib/queries/gate";
 
 /**
@@ -17,9 +17,13 @@ import type { GateMatch } from "@/lib/queries/gate";
 export function GateMatchList({
   matches,
   signedIn,
+  onPickedAction,
 }: {
   matches: GateMatch[];
   signedIn: boolean;
+  /** Fired when a signed-out visitor saves a pick, so the sign-up
+   *  button below can wake up. */
+  onPickedAction?: () => void;
 }) {
   const slots = useMemo(() => {
     const byTime = new Map<string, GateMatch[]>();
@@ -41,6 +45,7 @@ export function GateMatchList({
           kickoff={kickoff}
           games={games}
           signedIn={signedIn}
+          onPickedAction={onPickedAction}
         />
       ))}
     </div>
@@ -51,10 +56,12 @@ function Slot({
   kickoff,
   games,
   signedIn,
+  onPickedAction,
 }: {
   kickoff: string;
   games: GateMatch[];
   signedIn: boolean;
+  onPickedAction?: () => void;
 }) {
   const when = new Date(kickoff);
   const day = when.toLocaleDateString([], { weekday: "short" });
@@ -81,7 +88,12 @@ function Slot({
 
       <div className="min-w-0 flex-1 space-y-3.5">
         {games.map((game) => (
-          <Fixture key={game.id} match={game} signedIn={signedIn} />
+          <Fixture
+            key={game.id}
+            match={game}
+            signedIn={signedIn}
+            onPickedAction={onPickedAction}
+          />
         ))}
       </div>
     </section>
@@ -91,9 +103,11 @@ function Slot({
 function Fixture({
   match,
   signedIn,
+  onPickedAction,
 }: {
   match: GateMatch;
   signedIn: boolean;
+  onPickedAction?: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
 
@@ -119,17 +133,18 @@ function Fixture({
     }
 
     /**
-     * Not signed in: keep the pick and go and make an account.
+     * Not signed in: keep the pick here and show it saved.
      *
-     * Asking for a score before asking for an account inverts the
-     * order deliberately. Someone who has already chosen 2–1 has
-     * committed something, and people finish sign-ups they have
-     * already invested in. The pick travels with them and lands the
-     * moment they arrive back.
+     * Redirecting to sign-up the moment someone types a score
+     * interrupts them mid-thought — they came to pick, not to make an
+     * account. So the picks accumulate on the page and the account
+     * comes once, at the bottom, when they have finished.
      */
     if (!signedIn) {
-      savePendingPicks([{ matchId: match.id, home: h, away: a }]);
-      window.location.href = `/signup?next=${encodeURIComponent("/gate")}`;
+      addPendingPick({ matchId: match.id, home: h, away: a });
+      setSaved([h, a]);
+      setOpen(false);
+      onPickedAction?.();
       return;
     }
 
@@ -247,7 +262,7 @@ function Fixture({
             </p>
           )}
 
-          {!signedIn && match.teams_announced && (
+          {match.teams_announced && !saved && (
             <button
               onClick={() => setOpen(true)}
               className="rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
@@ -256,16 +271,7 @@ function Fixture({
             </button>
           )}
 
-          {signedIn && match.teams_announced && !saved && (
-            <button
-              onClick={() => setOpen(true)}
-              className="rounded-md bg-amber-400 px-3 py-1 text-[13px] font-bold text-on-brand"
-            >
-              Pick
-            </button>
-          )}
-
-          {signedIn && saved && (
+          {saved && (
             <button
               onClick={() => setOpen(true)}
               className="text-[13px] font-medium text-stone-500 underline underline-offset-2"

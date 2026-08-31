@@ -21,15 +21,32 @@ const MAX_AGE = 60 * 60 * 2; // two hours: long enough for a sign-up
 
 export type PendingPick = { matchId: string; home: number; away: number };
 
-export function savePendingPicks(picks: PendingPick[]) {
-  if (typeof document === "undefined" || picks.length === 0) return;
-
+function write(picks: PendingPick[]) {
+  if (typeof document === "undefined") return;
   try {
     const value = encodeURIComponent(JSON.stringify(picks.slice(0, 12)));
     document.cookie = `${COOKIE}=${value}; path=/; max-age=${MAX_AGE}; SameSite=Lax`;
   } catch {
     // A pick that can't be stored just isn't stored.
   }
+}
+
+/**
+ * Adds one pick, replacing any earlier pick on the same match.
+ *
+ * Picks accumulate as someone works down the fixtures, so this reads
+ * what is there and writes it back rather than overwriting — otherwise
+ * picking a second match would silently discard the first.
+ */
+export function addPendingPick(pick: PendingPick) {
+  const existing = readPendingPicks().filter(
+    (p) => p.matchId !== pick.matchId
+  );
+  write([...existing, pick]);
+}
+
+export function countPendingPicks(): number {
+  return readPendingPicks().length;
 }
 
 export function readPendingPicks(): PendingPick[] {
