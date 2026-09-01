@@ -88,7 +88,18 @@ function Slot({
       <div className="min-w-0 flex-1 space-y-3.5">
         {games.map((game) => (
           <Fixture
-            key={game.id}
+            /**
+             * The server's pick is part of the key.
+             *
+             * `saved` is a useState initialiser, so it reads my_home
+             * once and never again. After the claim step writes picks
+             * and refreshes, the id alone was unchanged — React reused
+             * the old components and every row still showed unpicked
+             * while the database had the picks. Changing the key
+             * remounts the row so the initialiser runs against the
+             * value that just arrived.
+             */
+            key={`${game.id}:${game.my_home ?? "none"}`}
             match={game}
             signedIn={signedIn}
             onPickedAction={onPickedAction}
