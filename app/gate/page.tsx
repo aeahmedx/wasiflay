@@ -31,6 +31,24 @@ export default async function GatePage() {
   // an old link goes where they were trying to go.
   if (state.is_open) redirect("/");
 
+  /**
+   * Signed in with Google but no profile yet.
+   *
+   * The profile row is created during onboarding, and this page sits
+   * outside the (main) layout where that redirect normally happens — so
+   * someone arriving straight back from Google landed here looking
+   * logged out, with their picks still sitting in a cookie that nothing
+   * would claim.
+   *
+   * Sending them through onboarding and back means the picks are
+   * written the moment they return.
+   */
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user && !profile) redirect("/onboarding?next=%2Fgate");
+
   return (
     <GateView
       state={state}
