@@ -8,7 +8,7 @@ import type { GateState } from "@/lib/queries/gate";
 import { Wordmark } from "@/components/wordmark";
 import { GateShare } from "@/components/gate/gate-share";
 import { GateInstall } from "@/components/gate/gate-install";
-import { SignOutButton } from "@/components/sign-out-button";
+import { SignOutButton } from "@/app/(main)/sign-out-button";
 import { GateMatchList } from "@/components/gate/gate-match-list";
 import { ClaimPicks } from "@/components/gate/claim-picks";
 import { countPendingPicks } from "@/lib/pending-picks";
