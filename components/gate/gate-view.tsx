@@ -277,10 +277,7 @@ export function GateView({
                 href={`/signup?next=${encodeURIComponent("/gate")}`}
                 className="mt-3 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
               >
-                Save{" "}
-                {pendingCount === 1
-                  ? "your prediction"
-                  : `your ${pendingCount} predictions`}
+                Sign Up and You&apos;re In
               </Link>
             ) : (
               <p className="mt-3 rounded-lg bg-stone-100 px-4 py-3 text-center text-sm font-medium text-stone-500">
