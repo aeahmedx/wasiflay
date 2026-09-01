@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { GateState } from "@/lib/queries/gate";
 import { Wordmark } from "@/components/wordmark";
 import { GateShare } from "@/components/gate/gate-share";
 import { GateInstall } from "@/components/gate/gate-install";
-import { SignOutButton } from "@/app/(main)/sign-out-button";
 import { GateMatchList } from "@/components/gate/gate-match-list";
 import { ClaimPicks } from "@/components/gate/claim-picks";
 import { countPendingPicks } from "@/lib/pending-picks";
@@ -364,7 +364,15 @@ export function GateView({
 
         {signedIn && (
           <div className="mt-6 text-center">
-            <SignOutButton />
+            <button
+              onClick={async () => {
+                await createClient().auth.signOut();
+                router.refresh();
+              }}
+              className="text-xs font-medium text-on-brand underline underline-offset-4 opacity-70"
+            >
+              Sign out
+            </button>
           </div>
         )}
 
