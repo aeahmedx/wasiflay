@@ -30,6 +30,10 @@ export type Post = {
   helpful_count: number;
   event_id: string | null;
   created_at: string;
+  image_url: string | null;
+  /** Stored so the feed can reserve space before the image loads. */
+  image_width: number | null;
+  image_height: number | null;
 };
 
 export type Answer = {
@@ -43,7 +47,7 @@ export type Answer = {
 };
 
 const POST_FIELDS =
-  "id, author_id, type, title, body, city, region, is_anonymous, answer_count, helpful_count, event_id, created_at";
+  "id, author_id, type, title, body, city, region, is_anonymous, answer_count, helpful_count, event_id, created_at, image_url, image_width, image_height";
 const ANSWER_FIELDS =
   "id, post_id, author_id, body, is_anonymous, helpful_count, created_at";
 
@@ -158,6 +162,9 @@ export async function createPost(
     region: string | null;
     is_anonymous: boolean;
     event_id?: string | null;
+    image_url?: string | null;
+    image_width?: number | null;
+    image_height?: number | null;
   }
 ): Promise<{ id: string }> {
   // Only `id` is read back. Migration 0004 revoked SELECT on author_id for

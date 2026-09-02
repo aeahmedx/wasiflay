@@ -14,7 +14,8 @@ export type PublicProfile = {
   contribution_count: number;
   helpful_count: number;
   created_at: string;
-  region: string;
+  /** Nullable since onboarding stopped asking. regionName() handles it. */
+  region: string | null;
   city: string | null; // auto-nulled for minors by the view
   is_self: boolean;
   is_banned: boolean;  // own status only; always false for other people
@@ -61,10 +62,13 @@ export async function profileExists(
 export type CreateProfileInput = {
   id: string;
   display_name: string;
-  region: string;
+  /** Nullable: onboarding no longer asks, and the column allows it. */
+  region: string | null;
   city: string | null;
   date_of_birth: string; // YYYY-MM-DD
   country_flag: string;
+  /** Which printed card brought them. Null when they arrived directly. */
+  promo_code?: string | null;
 };
 
 export async function createProfile(

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import { MessageMenu } from "@/components/rooms/message-menu";
 import { ReactionBar } from "@/components/rooms/reaction-bar";
 import { useReactions } from "@/lib/hooks/use-reactions";
@@ -296,7 +295,21 @@ export function RoomView({
         style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <BackLink fallback="/rooms" label="←" className="text-lg text-stone-600 leading-none" />
+          {/*
+            A plain link to /rooms rather than router.back().
+
+            A room's parent is always the room list, and history is not
+            a reliable guide to it: signing in from inside a room leaves
+            the auth pages as the previous entries, so going back landed
+            people on the sign-in screen they had just completed.
+          */}
+          <Link
+            href="/rooms"
+            aria-label="All rooms"
+            className="text-lg text-stone-600 leading-none"
+          >
+            ←
+          </Link>
           <div className="min-w-0">
           <h1 className="font-semibold text-stone-900 truncate">{room.name}</h1>
           {presence !== null && (
@@ -554,6 +567,7 @@ export function RoomView({
           </div>
         ) : (
           <Link
+            replace
             href={`/signup?next=${encodeURIComponent(`/rooms/${room.slug}`)}`}
             className="block text-center rounded-lg bg-emerald-800 px-4 py-2.5 font-medium text-stone-0"
           >

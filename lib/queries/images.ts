@@ -74,6 +74,33 @@ export async function measure(blob: Blob): Promise<{ w: number; h: number }> {
   return size;
 }
 
+/**
+ * A photo attached to a feed post.
+ *
+ * Same bucket and same policies as room photos — the upload policy
+ * keys on the user id being the second path segment, so the shape of
+ * this path matters and mirrors the room one deliberately.
+ */
+export async function uploadPostImage(
+  client: SupabaseClient,
+  userId: string,
+  blob: Blob
+): Promise<string> {
+  const path = `posts/${userId}/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}.jpg`;
+
+  const { error } = await client.storage.from(BUCKET).upload(path, blob, {
+    contentType: "image/jpeg",
+    cacheControl: "31536000",
+    upsert: false,
+  });
+  if (error) throw error;
+
+  const { data } = client.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function uploadRoomImage(
   client: SupabaseClient,
   userId: string,

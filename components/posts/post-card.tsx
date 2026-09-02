@@ -53,6 +53,35 @@ export function PostCard({
         {post.title}
       </h2>
 
+      {/*
+        A plain img, matching how room photos are already rendered. The
+        Supabase storage domain is not in next.config's remotePatterns,
+        so next/image would fail at runtime on exactly these URLs.
+
+        The stored dimensions become an aspect ratio, which reserves the
+        right space before the file arrives so a feed of photos doesn't
+        jump as they load.
+      */}
+      {post.image_url && (
+        <div
+          className="mt-2 overflow-hidden rounded-lg bg-stone-100"
+          style={
+            post.image_width && post.image_height
+              ? { aspectRatio: `${post.image_width} / ${post.image_height}` }
+              : undefined
+          }
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.image_url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+
       <p className="mt-2 text-sm text-stone-500">
         {/* Not a link: nesting an anchor inside the card's Link is invalid
             HTML and breaks keyboard navigation. Tap the post, then the
@@ -61,7 +90,14 @@ export function PostCard({
           {post.is_anonymous ? "Anonymous" : author?.display_name ?? "Someone"}
         </span>
         {regionLabel ? ` · ${regionLabel}` : ""} ·{" "}
-        {relativeTime(post.created_at)}
+        {/*
+          The clock moves between the server rendering this and the
+          browser hydrating it, so "2m ago" becomes "3m ago" and React
+          throws the tree away. suppressHydrationWarning is the intended
+          answer for a timestamp: the difference is expected, and the
+          client's value is the correct one.
+        */}
+        <span suppressHydrationWarning>{relativeTime(post.created_at)}</span>
       </p>
 
       <p className="mt-1.5 text-sm text-stone-600">

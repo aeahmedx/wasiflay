@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { formatCountdown, useCountdown } from "@/lib/hooks/use-now";
 import type { GateState } from "@/lib/queries/gate";
 import { Wordmark } from "@/components/wordmark";
@@ -275,6 +274,7 @@ export function GateView({
             matches.length > 0 &&
             (pendingCount > 0 ? (
               <Link
+            replace
                 href={`/signup?next=${encodeURIComponent("/gate")}`}
                 className="mt-3 block rounded-lg bg-emerald-800 px-4 py-3 text-center font-semibold text-stone-0"
               >
@@ -361,20 +361,6 @@ export function GateView({
         </div>
 
         <GateInstall />
-
-        {signedIn && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={async () => {
-                await createClient().auth.signOut();
-                router.refresh();
-              }}
-              className="text-xs font-medium text-on-brand underline underline-offset-4 opacity-70"
-            >
-              Sign out
-            </button>
-          </div>
-        )}
 
         <p className="mt-8 text-center text-xs font-medium text-on-brand opacity-60">
           Live match rooms · predictions · the community feed

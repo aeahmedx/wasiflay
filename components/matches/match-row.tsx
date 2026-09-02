@@ -152,6 +152,7 @@ export function MatchRow({
                 </button>
               ) : (
                 <Link
+            replace
                   href={`/signup?next=${encodeURIComponent("/matches")}`}
                   className="ml-auto shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-on-brand"
                 >

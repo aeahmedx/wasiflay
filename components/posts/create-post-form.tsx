@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -14,6 +14,13 @@ import { BackLink } from "@/components/back-link";
 import { Toggle } from "@/components/ui/toggle";
 import { ContentNotice } from "@/components/content-notice";
 import { checkContent, contentErrorMessage } from "@/lib/content-safety";
+import {
+  compressImage,
+  ImageDecodeError,
+  ImageTooLargeError,
+  measure,
+  uploadPostImage,
+} from "@/lib/queries/images";
 import type { Region } from "@/lib/queries/regions";
 
 const TITLE_PLACEHOLDER: Record<PostType, string> = {
@@ -62,12 +69,69 @@ export function CreatePostForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * The photo, held locally until the post is submitted.
+   *
+   * Compressed on selection rather than on submit so the wait happens
+   * while someone is still writing, not after they have tapped Post.
+   * A preview URL is kept alongside so the file never has to be read
+   * twice.
+   */
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<Blob | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoSize, setPhotoSize] = useState<{ w: number; h: number } | null>(
+    null
+  );
+  const [preparing, setPreparing] = useState(false);
+
+  async function choosePhoto(file: File | undefined) {
+    if (!file) return;
+
+    setPreparing(true);
+    setError(null);
+
+    try {
+      const blob = await compressImage(file);
+      const size = await measure(blob);
+
+      // Replace rather than accumulate; only one photo per post.
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+
+      setPhoto(blob);
+      setPhotoSize(size);
+      setPhotoPreview(URL.createObjectURL(blob));
+    } catch (e) {
+      setError(
+        e instanceof ImageTooLargeError
+          ? "That photo is too big. Try one under 25MB."
+          : e instanceof ImageDecodeError
+          ? "Couldn't read that photo. Try a different one."
+          : "Couldn't add that photo. Try again."
+      );
+    } finally {
+      setPreparing(false);
+      // Clear the input so picking the same file again still fires.
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  }
+
+  function removePhoto() {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoSize(null);
+  }
+
   const trimmedTitle = title.trim();
   const combined = `${title} ${body}`;
   // Blocked outright — nothing else here stops a post.
   const blocked = checkContent(combined).hasCardNumber;
   const valid =
-    trimmedTitle.length >= 5 && trimmedTitle.length <= 200 && !blocked;
+    trimmedTitle.length >= 5 &&
+    trimmedTitle.length <= 200 &&
+    !blocked &&
+    !preparing;
 
   async function submit() {
     if (!valid || saving) return;
@@ -76,6 +140,14 @@ export function CreatePostForm({
 
     try {
       const supabase = createClient();
+
+      // Uploaded here rather than on selection so an abandoned draft
+      // never leaves an orphaned file in storage.
+      let imageUrl: string | null = null;
+      if (photo) {
+        imageUrl = await uploadPostImage(supabase, userId, photo);
+      }
+
       const created = await createPost(supabase, {
         author_id: userId,
         type,
@@ -85,6 +157,9 @@ export function CreatePostForm({
         region: region === "__all__" ? null : region,
         is_anonymous: anonymous,
         event_id: eventId,
+        image_url: imageUrl,
+        image_width: photoSize?.w ?? null,
+        image_height: photoSize?.h ?? null,
       });
       router.replace(safeNext(`/posts/${created.id}`));
       router.refresh();
@@ -219,6 +294,49 @@ export function CreatePostForm({
 
               A Toggle rather than a checkbox: on iOS a checkbox steals
               focus from the body field and Safari drops the keyboard. */}
+          {/* Photo. Sits above the anonymity toggle because it is part
+              of writing the post, and the toggle is the last decision. */}
+          <div>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*"
+              onChange={(e) => void choosePhoto(e.target.files?.[0])}
+              className="sr-only"
+              id="post-photo"
+            />
+
+            {photoPreview ? (
+              <div className="overflow-hidden rounded-lg border border-stone-300 bg-stone-0">
+                {/* Plain img, not next/image: the source is a local
+                    object URL that the optimiser cannot fetch. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoPreview}
+                  alt="Selected photo"
+                  className="block max-h-72 w-full object-contain"
+                />
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
+                  <span className="text-sm text-stone-600">Photo added</span>
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="text-sm font-medium text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label
+                htmlFor="post-photo"
+                className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-stone-300 bg-stone-0 px-4 py-4 text-sm font-medium text-stone-700"
+              >
+                {preparing ? "Adding photo…" : "Add a photo"}
+              </label>
+            )}
+          </div>
+
           <ContentNotice text={combined} />
 
           <Toggle
@@ -234,7 +352,7 @@ export function CreatePostForm({
           disabled={!valid || saving}
           className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 disabled:opacity-40"
         >
-          {saving ? "Posting…" : "Post"}
+          {saving ? "Posting…" : preparing ? "Adding photo…" : "Post"}
         </button>
 
         {title.length > 0 && !valid && (

@@ -112,6 +112,7 @@ export function MatchHeader({
               </button>
             ) : (
               <Link
+            replace
                 href={`/signup?next=${encodeURIComponent(
                   `/matches/${match.id}`
                 )}`}

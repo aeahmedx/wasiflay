@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ViewTabs } from "@/components/view-tabs";
 import { getCurrentProfile } from "@/lib/queries/profiles.server";
@@ -103,6 +104,22 @@ export default async function ModPage({
             <ReportQueue isAdmin={isAdmin} viewerId={profile.id} />
           )}
         </ErrorBoundary>
+
+        {/* The booth dashboard, on its own URL so it opens directly on
+            a phone rather than being found through here. */}
+        <div className="mt-6">
+          <Link
+            href="/mod/promoters"
+            className="block rounded-lg border border-stone-300 bg-stone-0 px-4 py-3"
+          >
+            <span className="block text-sm font-medium text-stone-900">
+              Signups
+            </span>
+            <span className="block text-xs text-stone-600">
+              Totals, per card, per hour. Built for a phone at the booth.
+            </span>
+          </Link>
+        </div>
 
         {isAdmin && gate && reveal && (
           <div className="mt-8 border-t border-stone-200 pt-6">

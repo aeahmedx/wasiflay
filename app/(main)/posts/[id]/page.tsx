@@ -133,6 +133,35 @@ export default async function PostPage({
             </p>
           )}
 
+          {/*
+            A plain img, matching room photos. The Supabase storage
+            domain is not in next.config's remotePatterns, so next/image
+            would fail on exactly these URLs.
+
+            Shown at natural height here rather than cropped: the feed
+            card is a preview, this is the photo itself.
+          */}
+          {post.image_url && (
+            <div
+              className="mt-3 overflow-hidden rounded-lg bg-stone-100"
+              style={
+                post.image_width && post.image_height
+                  ? {
+                      aspectRatio: `${post.image_width} / ${post.image_height}`,
+                    }
+                  : undefined
+              }
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={post.image_url}
+                alt=""
+                decoding="async"
+                className="h-full w-full object-contain"
+              />
+            </div>
+          )}
+
           <p className="mt-3 text-sm text-stone-500">
             {post.is_anonymous || !post.author_id ? (
               <span dir="auto">Anonymous</span>

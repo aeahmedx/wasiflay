@@ -4,24 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createProfile } from "@/lib/queries/profiles";
-import { getRegions, type Region } from "@/lib/queries/regions";
 import { safeNext } from "@/lib/safe-next";
 import { MINIMUM_AGE } from "@/lib/legal";
-
-const FLAGS = [
-  { code: "SD", label: "Sudan" },
-  { code: "US", label: "United States" },
-  { code: "GB", label: "United Kingdom" },
-  { code: "CA", label: "Canada" },
-  { code: "EG", label: "Egypt" },
-  { code: "AE", label: "United Arab Emirates" },
-  { code: "SA", label: "Saudi Arabia" },
-  { code: "QA", label: "Qatar" },
-  { code: "ET", label: "Ethiopia" },
-  { code: "KE", label: "Kenya" },
-  { code: "AU", label: "Australia" },
-  { code: "OTHER", label: "Somewhere else" },
-];
+import { readPromoCode } from "@/lib/promo-code";
 
 function yearsSince(dob: string): number {
   const d = new Date(dob);
@@ -33,45 +18,74 @@ function yearsSince(dob: string): number {
   return age;
 }
 
+/**
+ * Google hands back a name in one of several shapes depending on how the
+ * account was set up. Take the first that exists rather than assuming.
+ */
+function nameFromGoogle(meta: Record<string, unknown> | undefined): string {
+  if (!meta) return "";
+  for (const key of ["full_name", "name", "preferred_username"]) {
+    const value = meta[key];
+    if (typeof value === "string" && value.trim().length >= 2) {
+      return value.trim().slice(0, 50);
+    }
+  }
+  return "";
+}
+
+/**
+ * The last screen before the app.
+ *
+ * It used to ask for four things: name, region, town and date of birth.
+ * Three of those Google already knows or the app can default, and every
+ * one of them was a place to abandon a sign-up that had already been
+ * agreed to.
+ *
+ * What's left is the date of birth, which stays because the whole minor
+ * protection layer depends on it — RSVP rules, contact details never
+ * released, what a moderator sees. That isn't friction, it's the thing
+ * that lets under-18s use this at all.
+ *
+ * The name is prefilled from Google and editable. Region and country
+ * are dropped: region filtering is switched off for launch, and the
+ * flag has a sensible default. Both can be set later from profile edit.
+ */
 export default function OnboardingPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-  const [regions, setRegions] = useState<Region[]>([]);
   const [displayName, setDisplayName] = useState("");
-  const [region, setRegion] = useState("");
-  const [city, setCity] = useState("");
+  const [checking, setChecking] = useState(true);
   const [dob, setDob] = useState("");
-  const [flag, setFlag] = useState("SD");
-
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
-    getRegions(supabase)
-      .then(setRegions)
-      .catch(() => setError("Couldn't load regions. Reload the page."));
-
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
         router.replace("/signup");
         return;
       }
+
       setUserId(data.user.id);
+      setDisplayName(
+        nameFromGoogle(data.user.user_metadata) ||
+          // An account with no name attached still needs something; the
+          // field is editable and the button stays disabled until it is
+          // long enough.
+          ""
+      );
       setChecking(false);
     });
   }, [router]);
 
   const age = dob ? yearsSince(dob) : NaN;
   const tooYoung = !Number.isNaN(age) && age < MINIMUM_AGE;
-  const isMinor = !Number.isNaN(age) && age >= MINIMUM_AGE && age < 18;
 
   const valid =
     displayName.trim().length >= 2 &&
     displayName.trim().length <= 50 &&
-    region.length > 0 &&
     !Number.isNaN(age) &&
     age >= MINIMUM_AGE &&
     age < 120;
@@ -86,28 +100,39 @@ export default function OnboardingPage() {
       await createProfile(supabase, {
         id: userId,
         display_name: displayName.trim(),
-        region,
-        city: city.trim() || null,
+        // Nullable, and region filtering is off for launch. Someone can
+        // set it from profile edit whenever it starts to matter.
+        region: null,
+        city: null,
         date_of_birth: dob,
-        country_flag: flag,
+        // Column default, stated here so the shape stays explicit.
+        country_flag: "SD",
+        /**
+         * Which printed card brought them, if any. Read at the point of
+         * use rather than held in state — it is written once and can
+         * never go stale that way.
+         */
+        promo_code: readPromoCode(),
       });
-      /**
-       * Read at the moment it's used rather than held in state.
-       *
-       * It was being set from the URL at the top of an effect, which
-       * updates state during mount and costs a second render pass
-       * before paint. Nothing renders this value — it is only ever the
-       * destination after saving — so there was never a reason for it
-       * to be state.
-       */
+
       router.replace(
         safeNext(new URLSearchParams(window.location.search).get("next"))
       );
       router.refresh();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "";
+      /**
+       * Supabase errors keep their detail on non-enumerable fields, so
+       * logging the object alone prints "{}". Pulled out by hand so a
+       * failure here is diagnosable without another round trip.
+       */
+      const err = e as { message?: string; code?: string; details?: string };
+      console.error(
+        "createProfile failed:",
+        [err.code, err.message, err.details].filter(Boolean).join(" · ") || e
+      );
+
       setError(
-        msg.includes("duplicate")
+        (err.message ?? "").includes("duplicate")
           ? "You already have a profile. Reloading."
           : "Couldn't save your profile. Check your connection and try again."
       );
@@ -127,10 +152,10 @@ export default function OnboardingPage() {
     <main className="min-h-dvh flex flex-col justify-center px-6 py-12 bg-stone-50">
       <div className="w-full max-w-sm mx-auto">
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">
-          Set up your profile
+          One last thing
         </h1>
         <p className="mt-2 mb-8 text-stone-600">
-          This is how the community will see you.
+          Then you&apos;re in.
         </p>
 
         {error && (
@@ -158,72 +183,9 @@ export default function OnboardingPage() {
               maxLength={50}
               className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="region"
-              className="block text-sm font-medium text-stone-800 mb-1.5"
-            >
-              Your community
-            </label>
-            <select
-              id="region"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
-            >
-              <option value="" disabled>
-                Choose a region
-              </option>
-              {regions.map((r) => (
-                <option key={r.slug} value={r.slug}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
             <p className="mt-1.5 text-xs text-stone-500">
-              Pick the metro area you&apos;re part of, not just your town.
+              How the community sees you. Change it any time.
             </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="city"
-              className="block text-sm font-medium text-stone-800 mb-1.5"
-            >
-              Town{" "}
-              <span className="font-normal text-stone-500">(optional)</span>
-            </label>
-            <input
-              id="city"
-              dir="auto"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="New York City"
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="flag"
-              className="block text-sm font-medium text-stone-800 mb-1.5"
-            >
-              Where you&apos;re from
-            </label>
-            <select
-              id="flag"
-              value={flag}
-              onChange={(e) => setFlag(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
-            >
-              {FLAGS.map((f) => (
-                <option key={f.code} value={f.code}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -241,14 +203,13 @@ export default function OnboardingPage() {
               max={new Date().toISOString().slice(0, 10)}
               className="w-full rounded-lg border border-stone-300 bg-stone-0 px-3.5 py-3 text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-800"
             />
-            {tooYoung && (
+            {tooYoung ? (
               <p className="mt-2 text-sm text-red-700">
                 You need to be {MINIMUM_AGE} or older to use Wasif Lay.
               </p>
-            )}
-            {isMinor && (
-              <p className="mt-2 text-sm text-stone-600">
-                Your town stays private.
+            ) : (
+              <p className="mt-1.5 text-xs text-stone-500">
+                Nobody sees this. It keeps younger members protected.
               </p>
             )}
           </div>
@@ -259,7 +220,7 @@ export default function OnboardingPage() {
           disabled={!valid || saving}
           className="mt-8 w-full rounded-lg bg-emerald-800 px-4 py-3.5 font-medium text-stone-0 transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800 disabled:opacity-40"
         >
-          {saving ? "Saving…" : "Continue"}
+          {saving ? "Saving…" : "Let's go"}
         </button>
       </div>
     </main>
