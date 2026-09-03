@@ -407,3 +407,7 @@ body {
 .gate-surface .on-brand-border-soft {
   border-color: rgba(43, 29, 7, 0.28);
 }
+
+.brand-surface .brand-art {
+  filter: none;
+}

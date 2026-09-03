@@ -202,7 +202,9 @@ export default async function HubPage() {
       <LiveRefresh watch={[{ table: "matches" }, { table: "predictions" }]} />
 
       {/* --- masthead ------------------------------------------------ */}
-      <header className="bg-amber-400 px-4 pb-5 pt-6">
+      {/* brand-surface keeps the wordmark's ink in dark mode. Without
+          it the logo inverts to white and vanishes into the yellow. */}
+      <header className="brand-surface bg-amber-400 px-4 pb-5 pt-6">
         <div className="mx-auto max-w-md">
           <Wordmark size="md" priority />
           <h1 className="mt-3 text-[1.75rem] font-black leading-tight tracking-tight text-on-brand">
