@@ -49,6 +49,33 @@ const TABS: Tab[] = [
     ),
   },
   {
+    href: "/hub",
+    label: "Tourney",
+    match: (p) => p.startsWith("/hub"),
+    icon: (a) => (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" aria-hidden>
+        <path
+          d="M7 4h10v3a5 5 0 0 1-10 0z"
+          stroke="currentColor"
+          strokeWidth={stroke(a)}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"
+          stroke="currentColor"
+          strokeWidth={stroke(a)}
+          strokeLinecap="round"
+        />
+        <path
+          d="M12 12v4m-3 4h6"
+          stroke="currentColor"
+          strokeWidth={stroke(a)}
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
     href: "/search",
     label: "Search",
     match: (p) => p.startsWith("/search"),
