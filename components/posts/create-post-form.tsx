@@ -27,6 +27,9 @@ const TITLE_PLACEHOLDER: Record<PostType, string> = {
   question: "What do you want to ask?",
   recommendation: "What do you want to share?",
   announcement: "What's happening?",
+  // Unreachable from this form — photos are posted at /create/photo —
+  // but Record<PostType, string> requires every member.
+  photo: "What's happening?",
 };
 
 export function CreatePostForm({

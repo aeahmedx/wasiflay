@@ -24,6 +24,7 @@ const TYPE_LABEL = {
   question: "Question",
   recommendation: "Recommendation",
   announcement: "Announcement",
+  photo: "Photo",
 } as const;
 
 export default async function PostPage({
@@ -80,7 +81,10 @@ export default async function PostPage({
               {TYPE_LABEL[post.type]}
             </span>
             <span className="flex shrink-0 items-center gap-3">
-              <ShareButton path={`/posts/${post.id}`} title={post.title} />
+              <ShareButton
+                path={`/posts/${post.id}`}
+                title={post.title ?? "Photo on Wasif Lay"}
+              />
               {isMine && (
                 <>
                   <Link
@@ -117,12 +121,16 @@ export default async function PostPage({
 
           </div>
 
-          <h1
-            className="mt-2 text-xl font-semibold leading-snug text-stone-900"
-            dir="auto"
-          >
-            {post.title}
-          </h1>
+          {/* A photo post has no title. An empty heading would leave a
+              gap where the eye expects words. */}
+          {post.title && (
+            <h1
+              className="mt-2 text-xl font-semibold leading-snug text-stone-900"
+              dir="auto"
+            >
+              {post.title}
+            </h1>
+          )}
 
           {post.body && (
             <p

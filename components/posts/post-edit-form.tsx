@@ -17,7 +17,13 @@ export function PostEditForm({
 }) {
   const router = useRouter();
 
-  const [title, setTitle] = useState(post.title);
+  /**
+   * Nullable since photo posts arrived: they carry no title at all.
+   * An empty string keeps the input controlled and lets the existing
+   * length validation work unchanged — a photo post edited here simply
+   * gains a title, which is a reasonable thing to allow.
+   */
+  const [title, setTitle] = useState(post.title ?? "");
   const [body, setBody] = useState(post.body);
   const [region, setRegion] = useState<string>(post.region ?? "__all__");
   const [anonymous, setAnonymous] = useState(post.is_anonymous);
@@ -50,7 +56,7 @@ export function PostEditForm({
   }
 
   return (
-    <main className="min-h-dvh bg-stone-50 px-4 pt-6 pb-safe-page">
+    <main className="min-h-dvh bg-stone-50 px-4 py-6">
       <div className="max-w-md mx-auto">
         {/* BackLink, not a Link: a Link pushes a new history entry, so
             post -> edit -> post left Back on the post pointing at edit,
