@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { CreateChoice } from "@/components/posts/create-choice";
 import { usePathname } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -96,6 +97,31 @@ const TABS: Tab[] = [
     label: "Post",
     match: (p) => p === "/create",
     icon: () => null, // rendered as the raised action below
+  },
+  {
+    href: "/photos",
+    label: "Photos",
+    match: (p) => p.startsWith("/photos"),
+    icon: (a) => (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" aria-hidden>
+        <rect
+          x="3"
+          y="5"
+          width="18"
+          height="14"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth={stroke(a)}
+        />
+        <circle cx="8.5" cy="10" r="1.6" stroke="currentColor" strokeWidth={stroke(a)} />
+        <path
+          d="m4 17 5-4 4 3 3-2 4 3"
+          stroke="currentColor"
+          strokeWidth={stroke(a)}
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
   },
   {
     href: "/rooms",
@@ -215,27 +241,31 @@ export function TabBar({
             if (isPost) {
               return (
                 <li key={tab.href} className="flex-1">
-                  <Link
-                    href={href}
-                    aria-label="Write a post"
-                    className="flex h-[4.5rem] flex-col items-center justify-center gap-1"
-                  >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-800 text-stone-0 shadow-sm">
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-6 w-6"
-                        fill="none"
-                        aria-hidden
-                      >
-                        <path
-                          d="M12 5v14M5 12h14"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </span>
-                  </Link>
+                  {userId ? (
+                    <CreateChoice />
+                  ) : (
+                    <Link
+                      href={href}
+                      aria-label="Write a post"
+                      className="flex h-[4.5rem] flex-col items-center justify-center gap-1"
+                    >
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-800 text-stone-0 shadow-sm">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-6 w-6"
+                          fill="none"
+                          aria-hidden
+                        >
+                          <path
+                            d="M12 5v14M5 12h14"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                    </Link>
+                  )}
                 </li>
               );
             }

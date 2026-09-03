@@ -6,12 +6,14 @@ const TYPE_LABEL: Record<Post["type"], string> = {
   question: "Question",
   recommendation: "Recommendation",
   announcement: "Announcement",
+  photo: "Photo",
 };
 
 const TYPE_STYLE: Record<Post["type"], string> = {
   question: "bg-emerald-50 text-emerald-900",
   recommendation: "bg-amber-50 text-amber-900",
   announcement: "bg-stone-100 text-stone-700",
+  photo: "bg-stone-100 text-stone-700",
 };
 
 export function relativeTime(iso: string): string {
@@ -49,9 +51,16 @@ export function PostCard({
         {TYPE_LABEL[post.type]}
       </span>
 
-      <h2 className="mt-2 font-medium text-stone-900 leading-snug" dir="auto">
-        {post.title}
-      </h2>
+      {/* A photo post has no title. Rendering an empty heading would
+          leave a gap where the eye expects words. */}
+      {post.title && (
+        <h2
+          className="mt-2 font-medium text-stone-900 leading-snug"
+          dir="auto"
+        >
+          {post.title}
+        </h2>
+      )}
 
       {/*
         A plain img, matching how room photos are already rendered. The

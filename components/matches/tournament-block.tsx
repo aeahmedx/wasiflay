@@ -353,7 +353,6 @@ export function TournamentBlock({
                         </button>
                       ) : (
                         <Link
-            replace
                           href="/signup?next=%2F"
                           className="shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-on-brand"
                         >
@@ -396,20 +395,15 @@ export function TournamentBlock({
           </p>
         )}
 
-        <div className="flex gap-2">
-          <Link
-            href="/matches"
-            className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
-          >
-            All matches
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="flex-1 rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
-          >
-            Leaderboard
-          </Link>
-        </div>
+        {/* One door instead of two: the hub holds the schedule, the
+            bracket and the board, so splitting them here sent people to
+            a narrower version of the same place. */}
+        <Link
+          href="/hub"
+          className="block rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-on-brand"
+        >
+          Go to Tourney Hub
+        </Link>
 
         <div className="mt-2 flex items-center justify-center gap-4">
           <Link

@@ -233,7 +233,7 @@ export default async function HubPage() {
             <div className="flex items-baseline justify-between gap-3">
               <div>
                 <p className="text-sm text-emerald-900">You are</p>
-                <p className="text-2xl font-bold tabular-nums leading-tight text-emerald-950">
+                <p className="text-2xl font-bold tabular-nums leading-tight text-emerald-900">
                   {standing.rank === 1
                     ? `Top of ${standing.total}`
                     : `${standing.rank} of ${standing.total}`}
@@ -294,7 +294,7 @@ export default async function HubPage() {
             <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-stone-700">
               <span
                 aria-hidden
-                className="inline-block h-2 w-2 rounded-full bg-red-600"
+                className="inline-block h-2 w-2 rounded-full bg-red-700"
               />
               {live.length === 1 ? "Playing now" : `${live.length} playing now`}
             </h2>

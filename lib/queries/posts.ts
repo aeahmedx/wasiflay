@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Author } from "@/lib/queries/messages";
 
-export type PostType = "question" | "recommendation" | "announcement";
+export type PostType =
+  | "question"
+  | "recommendation"
+  | "announcement"
+  | "photo";
 
 export const POST_TYPES: { value: PostType; label: string; hint: string }[] = [
   { value: "question", label: "Question", hint: "Ask the community" },
@@ -21,7 +25,8 @@ export type Post = {
   id: string;
   author_id: string | null; // null when anonymous and not yours
   type: PostType;
-  title: string;
+  /** Null on a photo post: a picture from the sideline needs no title. */
+  title: string | null;
   body: string;
   city: string | null;
   region: string | null; // null = all regions
@@ -151,12 +156,35 @@ export async function getAnswers(
   return (data ?? []) as Answer[];
 }
 
+/**
+ * Every photo, newest first.
+ *
+ * Selects on image_url rather than type so pictures attached to an
+ * ordinary post appear on the wall too — someone asking about parking
+ * with a photo of the lot took the same picture as someone who posted
+ * it alone.
+ */
+export async function getPhotoPosts(
+  client: SupabaseClient,
+  limit = 60
+): Promise<Post[]> {
+  const { data, error } = await client
+    .from("public_posts")
+    .select(POST_FIELDS)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as unknown as Post[];
+}
+
 export async function createPost(
   client: SupabaseClient,
   input: {
     author_id: string;
     type: PostType;
-    title: string;
+    title: string | null;
     body: string;
     city: string | null;
     region: string | null;
