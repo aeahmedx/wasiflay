@@ -226,7 +226,9 @@ export function TabBar({
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-stone-0"
+        /* Yellow, so the bar reads as part of the brand rather than
+           dissolving into the feed behind it. */
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-amber-500 bg-amber-400"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto flex max-w-md items-stretch">
@@ -249,7 +251,10 @@ export function TabBar({
                       aria-label="Write a post"
                       className="flex h-[4.5rem] flex-col items-center justify-center gap-1"
                     >
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-800 text-stone-0 shadow-sm">
+                      <span
+                        style={{ backgroundColor: "#2b1d07", color: "#f5a623" }}
+                        className="flex h-11 w-11 items-center justify-center rounded-full shadow-sm"
+                      >
                         <svg
                           viewBox="0 0 24 24"
                           className="h-6 w-6"
@@ -275,8 +280,8 @@ export function TabBar({
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex h-[4.5rem] flex-col items-center justify-center gap-1 ${
-                    active ? "text-emerald-800" : "text-stone-500"
+                  className={`relative flex h-[4.5rem] flex-col items-center justify-center gap-1 text-on-brand ${
+                    active ? "opacity-100" : "opacity-55"
                   }`}
                 >
                   {tab.icon(active)}

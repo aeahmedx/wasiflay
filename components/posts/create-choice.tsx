@@ -27,7 +27,12 @@ export function CreateChoice() {
         aria-expanded={open}
         className="flex h-[4.5rem] w-full flex-col items-center justify-center gap-1"
       >
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-800 text-stone-0 shadow-sm">
+        {/* Fixed brown, not a token: emerald-800 becomes yellow in dark
+            mode, and the bar behind this is yellow in both. */}
+        <span
+          style={{ backgroundColor: "#2b1d07", color: "#f5a623" }}
+          className="flex h-11 w-11 items-center justify-center rounded-full shadow-sm"
+        >
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden>
             <path
               d="M12 5v14M5 12h14"

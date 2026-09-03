@@ -88,6 +88,44 @@ function groupByDay(matches: Match[]): Day[] {
   return [...days.values()];
 }
 
+/**
+ * Splits fixtures into what's finished, what's on, and what's to come.
+ *
+ * The clock reading lives here rather than in the component body: a
+ * render must be pure, and Date.now() during render is exactly the
+ * impurity that rule exists to catch.
+ */
+function partition(matches: Match[]): {
+  live: Match[];
+  upcoming: Match[];
+  finished: Match[];
+} {
+  const now = Date.now();
+  const live: Match[] = [];
+  const upcoming: Match[] = [];
+  const finished: Match[] = [];
+
+  for (const match of matches) {
+    if (match.status === "cancelled") continue;
+
+    if (match.status === "finished") {
+      finished.push(match);
+      continue;
+    }
+
+    const kickoff = new Date(match.kicks_off_at).getTime();
+    if (Number.isNaN(kickoff)) continue;
+
+    if (kickoff <= now) {
+      live.push(match);
+    } else {
+      upcoming.push(match);
+    }
+  }
+
+  return { live, upcoming, finished };
+}
+
 function scoreline(match: Match): string {
   if (match.home_score === null || match.away_score === null) return "";
   return `${match.home_score}\u2013${match.away_score}`;
@@ -134,20 +172,7 @@ export default async function HubPage() {
     loadFailed = true;
   }
 
-  const now = Date.now();
-
-  const live = matches.filter(
-    (m) =>
-      m.status !== "cancelled" &&
-      m.status !== "finished" &&
-      new Date(m.kicks_off_at).getTime() <= now
-  );
-
-  const upcoming = matches.filter(
-    (m) => m.status !== "cancelled" && new Date(m.kicks_off_at).getTime() > now
-  );
-
-  const finished = matches.filter((m) => m.status === "finished");
+  const { live, upcoming, finished } = partition(matches);
 
   const nextKickoff = upcoming[0]?.kicks_off_at ?? null;
   const nextSlot = nextKickoff
@@ -218,7 +243,7 @@ export default async function HubPage() {
             className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3.5"
           >
             <p className="font-semibold text-stone-900">
-              Couldn&apos;t load the tournament
+              Trouble loading the tournament
             </p>
             <p className="mt-1 text-sm leading-relaxed text-stone-700">
               Usually a bad moment of signal. Pull down to refresh, or open
@@ -229,7 +254,13 @@ export default async function HubPage() {
 
         {/* --- where you stand --------------------------------------- */}
         {profile && standing && standing.played > 0 && (
-          <section className="rounded-lg border border-emerald-800 bg-emerald-50 px-4 py-3.5">
+          /* A rank that isn't tappable is a dead end: the next thing
+             anyone wants after reading it is the board it came from.
+             Only text inside, so no nested anchors. */
+          <Link
+            href="/leaderboard"
+            className="block rounded-lg border border-emerald-800 bg-emerald-50 px-4 py-3.5"
+          >
             <div className="flex items-baseline justify-between gap-3">
               <div>
                 <p className="text-sm text-emerald-900">You are</p>
@@ -254,8 +285,28 @@ export default async function HubPage() {
                 {standing.gap_above} behind the place above.
               </p>
             )}
-          </section>
+            <p className="mt-1.5 text-sm font-medium text-emerald-900 underline underline-offset-4">
+              See the full board
+            </p>
+          </Link>
         )}
+
+        {/* Sits directly under the standing: the two things anyone wants
+            after checking their rank are the rooms and the feed. */}
+        <section className="grid grid-cols-2 gap-2">
+          <Link
+            href="/rooms"
+            className="rounded-lg border border-stone-300 bg-stone-0 px-4 py-3 text-center font-medium text-stone-900"
+          >
+            Match rooms
+          </Link>
+          <Link
+            href="/"
+            className="rounded-lg border border-stone-300 bg-stone-0 px-4 py-3 text-center font-medium text-stone-900"
+          >
+            Community
+          </Link>
+        </section>
 
         {profile && picked === 0 && pickable > 0 && (
           <section className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3.5">
@@ -503,30 +554,32 @@ export default async function HubPage() {
             <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-700">
               Leaderboard
             </h2>
-            <ul className="divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 bg-stone-0">
-              {leaders.map((row) => (
-                <li
-                  key={row.user_id}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 ${
-                    row.is_me ? "bg-emerald-50" : ""
-                  }`}
-                >
-                  <span className="w-5 shrink-0 text-sm font-semibold tabular-nums text-stone-500">
-                    {row.rank}
-                  </span>
-                  <Link
-                    href={`/profile/${row.user_id}`}
-                    className="min-w-0 flex-1 truncate text-sm font-medium text-stone-900"
-                    dir="auto"
+            <div className="overflow-hidden rounded-lg border border-stone-200 bg-stone-0">
+              <ul className="divide-y divide-stone-200">
+                {leaders.map((row) => (
+                  <li
+                    key={row.user_id}
+                    className={`flex items-center gap-3 px-3.5 py-2.5 ${
+                      row.is_me ? "bg-emerald-50" : ""
+                    }`}
                   >
-                    {row.display_name}
-                  </Link>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-stone-900">
-                    {row.points}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    <span className="w-5 shrink-0 text-sm font-semibold tabular-nums text-stone-500">
+                      {row.rank}
+                    </span>
+                    <Link
+                      href={`/profile/${row.user_id}`}
+                      className="min-w-0 flex-1 truncate text-sm font-medium text-stone-900"
+                      dir="auto"
+                    >
+                      {row.display_name}
+                    </Link>
+                    <span className="shrink-0 text-sm font-bold tabular-nums text-stone-900">
+                      {row.points}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <Link
               href="/leaderboard"
               className="mt-2 inline-block text-sm text-stone-700 underline underline-offset-4"
@@ -570,21 +623,6 @@ export default async function HubPage() {
           </p>
         )}
 
-        {/* --- where else to go --------------------------------------- */}
-        <section className="grid grid-cols-2 gap-2 pb-2">
-          <Link
-            href="/rooms"
-            className="rounded-lg border border-stone-300 bg-stone-0 px-4 py-3 text-center font-medium text-stone-900"
-          >
-            Match rooms
-          </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-stone-300 bg-stone-0 px-4 py-3 text-center font-medium text-stone-900"
-          >
-            Community
-          </Link>
-        </section>
       </div>
     </main>
   );
