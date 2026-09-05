@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const COOKIE = "wl_tour";
 
@@ -47,6 +47,7 @@ const SCREENS = [
 
 export function OnboardingTour() {
   const router = useRouter();
+  const pathname = usePathname();
   const [step, setStep] = useState(0);
   const [gone, setGone] = useState(false);
 
@@ -59,6 +60,21 @@ export function OnboardingTour() {
   }
 
   if (gone) return null;
+
+  /**
+   * The homepage only.
+   *
+   * This is mounted in the layout, so it used to open on whatever page
+   * someone landed on — which for anyone arriving through the prize
+   * splash meant the profile form, then this, before they had seen a
+   * single thing. Two full-screen interruptions in a row is how a
+   * sign-up gets abandoned three taps from the end.
+   *
+   * Someone who signed up to make a pick goes straight to the picks.
+   * The tour waits until they come to the feed, which is the screen it
+   * is actually about.
+   */
+  if (pathname !== "/") return null;
 
   const screen = SCREENS[step];
   const last = step === SCREENS.length - 1;
