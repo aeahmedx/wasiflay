@@ -78,11 +78,6 @@ export function PrizeSplash({
     router.push(signedIn ? "/hub" : "/signup?next=%2Fhub");
   }
 
-  function dismiss() {
-    remember();
-    setShow(false);
-  }
-
   if (!show) return null;
 
   return (
@@ -129,13 +124,7 @@ export function PrizeSplash({
           {going ? "One moment…" : signedIn ? "Start picking" : "Sign up and play"}
         </button>
 
-        <button
-          type="button"
-          onClick={dismiss}
-          className="mt-2.5 w-full py-1.5 text-center text-sm font-medium text-on-brand underline underline-offset-4 opacity-70"
-        >
-          Look around first
-        </button>
+
 
         <p
           className="pb-5 pt-3 text-center text-xs text-on-brand opacity-60"
