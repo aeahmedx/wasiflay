@@ -22,7 +22,20 @@ const MAX_AGE = 60 * 60 * 24 * 365;
  * Rendered on mount rather than during the server pass so it can read
  * the cookie: the gate is a static-ish page and the splash is personal.
  */
-export function PrizeSplash({ signedIn }: { signedIn: boolean }) {
+export function PrizeSplash({
+  /**
+   * Optional, defaulting to signed out.
+   *
+   * The gate mounts this without knowing who is looking, and the only
+   * consequence of getting it wrong is a button that says "Sign up"
+   * to someone who already has an account — who then lands on a page
+   * that sends them straight through. A required prop here would fail
+   * the build for a distinction that barely shows.
+   */
+  signedIn = false,
+}: {
+  signedIn?: boolean;
+}) {
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [going, setGoing] = useState(false);
@@ -55,13 +68,14 @@ export function PrizeSplash({ signedIn }: { signedIn: boolean }) {
    * thing that greets them next time.
    *
    * Somebody already signed in has nothing to sign up for, so they go
-   * to the picks instead.
+   * straight to the hub — the schedule, the bracket and the board are
+   * all there, which is what the splash just promised them.
    */
   function enter() {
     if (going) return;
     setGoing(true);
     remember();
-    router.push(signedIn ? "/gate" : "/signup?next=%2Fgate");
+    router.push(signedIn ? "/hub" : "/signup?next=%2Fhub");
   }
 
   function dismiss() {
