@@ -16,6 +16,7 @@ import { SessionWatch } from "@/components/session-watch";
 import { ConnectionStatus } from "@/components/connection-status";
 import { shouldShowGate } from "@/lib/gate-guard";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { PrizeSplash } from "@/components/prize-splash";
 
 /**
  * Profile gate (SPEC 2.2).
@@ -85,6 +86,8 @@ export default async function MainLayout({
           mid-session shouldn't blank out content that's still readable.
           The service worker covers the cold-start case, where there
           genuinely is nothing to show. */}
+      <PrizeSplash />
+
       {needsTour && <OnboardingTour />}
 
       <ConnectionStatus />

@@ -10,6 +10,7 @@ import { GateShare } from "@/components/gate/gate-share";
 import { GateInstall } from "@/components/gate/gate-install";
 import { GateMatchList } from "@/components/gate/gate-match-list";
 import { ClaimPicks } from "@/components/gate/claim-picks";
+import { PrizeSplash } from "@/components/prize-splash";
 import { countPendingPicks } from "@/lib/pending-picks";
 import type { GateMatch } from "@/lib/queries/gate";
 
@@ -161,6 +162,8 @@ export function GateView({
           }}
         />
       </div>
+
+      <PrizeSplash />
 
       <ClaimPicks signedIn={signedIn} />
 
@@ -340,10 +343,10 @@ export function GateView({
           </span>
           <p className="text-sm leading-relaxed text-stone-700">
             <span className="font-semibold text-stone-900">
-              Nobody has ever won this.
+              $250 to whoever tops the board.
             </span>{" "}
-            Whoever tops the board is the first name on it, and that name
-            stays on it.
+            Free to enter. Nobody has ever won this, so the first name on
+            it stays on it.
           </p>
         </div>
 

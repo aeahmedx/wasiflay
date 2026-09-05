@@ -53,12 +53,10 @@ export default async function RulesPage() {
         </h1>
 
         <p className="mt-3 text-stone-800 leading-relaxed">
-          Nobody has ever won this. Whoever tops the board this weekend is
-          the first name on it, and that name stays on it — the first
+          Nobody has ever won this. Whoever tops the board this weekend
+          takes $250 and goes down as the first name on it — the first
           champion of the first tournament, before anyone else knew this
           existed. Call the scores, watch the games, argue in the rooms.
-          That is the whole prize, and in this community it is worth more
-          than money.
         </p>
 
         <div className="mt-6 space-y-6 text-stone-800 leading-relaxed">
@@ -142,12 +140,24 @@ export default async function RulesPage() {
 
           <section>
             <h2 className="font-semibold text-stone-900">
-              No money. None. Ever.
+              The prize, and the one rule
             </h2>
             <p className="mt-1.5">
-              This is free to play and there is no prize fund, no entry fee
-              and no payout. It is a game between people who know each
-              other.
+              $250 to whoever is top of the board once the final is
+              scored. Free to enter — there is no fee, no stake and
+              nothing to buy.
+            </p>
+            <p className="mt-1.5">
+              If two people finish level on points, the tiebreakers decide
+              it in this order: most exact scores, then most matches
+              predicted, then whoever committed earliest. Those are the
+              same tiebreakers the board has always used, so you can see
+              where you stand before the final rather than after it.
+            </p>
+            <p className="mt-1.5">
+              You need an account, and it needs a real name we can contact
+              you on. One person, one account — anyone found running
+              several forfeits the prize.
             </p>
             <p className="mt-1.5">
               <strong>
@@ -173,9 +183,9 @@ export default async function RulesPage() {
               tournament organisers. Match times and results are entered by
               hand and can be corrected if they are wrong — corrections
               rescore everyone fairly. Matches can be added, moved or
-              removed as the schedule changes. There is no prize of any
-              kind, monetary or otherwise, and nothing here is a contest of
-              chance or a game of skill offered for consideration.
+              removed as the schedule changes. The $250 is offered free
+              to enter, with no stake and no consideration of any kind —
+              it is a prize for predicting well, not a wager.
             </p>
             <p className="mt-1.5 text-sm text-stone-600">
               Anything unclear or unfair, email{" "}
