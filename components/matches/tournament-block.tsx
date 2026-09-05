@@ -281,95 +281,89 @@ export function TournamentBlock({
             )}
           </div>
 
-          {isLive ? (
-            <p className="mt-1 text-sm text-stone-700">
-              {nextSlot.length}{" "}
-              {nextSlot.length === 1 ? "match" : "matches"} at {slotTime}
-              {" · "}
-              <Link
-                href="/matches"
-                className="underline underline-offset-4"
-              >
-                pick them
-              </Link>
-            </p>
-          ) : (
-            <ul className="mt-2 space-y-2.5">
-              {nextSlot.map((m) => {
-                const pick = pickOf(m);
-                const open = m.is_open && !kickedOff;
+          {/* Always the full list.
 
-                if (picking === m.id && userId) {
-                  return (
-                    <li key={m.id}>
-                      <p
-                        className="font-semibold leading-snug text-stone-900"
-                        dir="auto"
-                      >
-                        {m.home_team} v {m.away_team}
-                      </p>
-                      <div className="mt-2">
-                        <PredictForm
-                          match={m}
-                          onDoneAction={(h, a) => {
-                            setJustPicked((p) => ({ ...p, [m.id]: [h, a] }));
-                            setPicking(null);
-                          }}
-                        />
-                      </div>
-                    </li>
-                  );
-                }
+              This used to collapse to a one-line link whenever anything
+              was playing, so a screen of LIVE rows was followed by a
+              sentence nobody read — people could not tell what was on
+              now and what was next. The next four render exactly as
+              they did before the first whistle. */}
+          <ul className="mt-2 space-y-2.5">
+            {nextSlot.map((m) => {
+              const pick = pickOf(m);
+              const open = m.is_open && !kickedOff;
 
+              if (picking === m.id && userId) {
                 return (
-                  <li key={m.id} className="flex items-center gap-2">
-                    <Link
-                      href={`/matches/${m.id}`}
-                      className="min-w-0 flex-1 font-semibold leading-snug text-stone-900"
+                  <li key={m.id}>
+                    <p
+                      className="font-semibold leading-snug text-stone-900"
                       dir="auto"
                     >
                       {m.home_team} v {m.away_team}
-                    </Link>
-
-                    {pick && (
-                      <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-900">
-                        {pick[0]}
-                        {"\u2013"}
-                        {pick[1]}
-                      </span>
-                    )}
-
-                    {open &&
-                      (userId ? (
-                        <button
-                          onClick={() => setPicking(m.id)}
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-                            pick
-                              ? "bg-stone-0 text-stone-700"
-                              : "bg-amber-400 text-on-brand"
-                          }`}
-                        >
-                          {pick ? "Change" : "Pick"}
-                        </button>
-                      ) : (
-                        <Link
-                          href="/signup?next=%2F"
-                          className="shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-on-brand"
-                        >
-                          Pick
-                        </Link>
-                      ))}
-
-                    {!open && !pick && (
-                      <span className="shrink-0 text-xs text-stone-500">
-                        Closed
-                      </span>
-                    )}
+                    </p>
+                    <div className="mt-2">
+                      <PredictForm
+                        match={m}
+                        onDoneAction={(h, a) => {
+                          setJustPicked((p) => ({ ...p, [m.id]: [h, a] }));
+                          setPicking(null);
+                        }}
+                      />
+                    </div>
                   </li>
                 );
-              })}
-            </ul>
-          )}
+              }
+
+              return (
+                <li key={m.id} className="flex items-center gap-2">
+                  <Link
+                    href={`/matches/${m.id}`}
+                    className="min-w-0 flex-1 font-semibold leading-snug text-stone-900"
+                    dir="auto"
+                  >
+                    {m.home_team} v {m.away_team}
+                  </Link>
+
+                  {pick && (
+                    <span className="shrink-0 rounded-full bg-stone-0 px-2.5 py-0.5 text-sm font-medium tabular-nums text-stone-900">
+                      {pick[0]}
+                      {"\u2013"}
+                      {pick[1]}
+                    </span>
+                  )}
+
+                  {open &&
+                    (userId ? (
+                      <button
+                        onClick={() => setPicking(m.id)}
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                          pick
+                            ? "bg-stone-0 text-stone-700"
+                            : "bg-amber-400 text-on-brand"
+                        }`}
+                      >
+                        {pick ? "Change" : "Pick"}
+                      </button>
+                    ) : (
+                      <Link
+                        replace
+                        href="/signup?next=%2F"
+                        className="shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-on-brand"
+                      >
+                        Pick
+                      </Link>
+                    ))}
+
+                  {!open && !pick && (
+                    <span className="shrink-0 text-xs text-stone-500">
+                      Closed
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
 
           {/* Everything beyond this slot is one tap away, never a list
               that grows with the schedule. */}
