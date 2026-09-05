@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const COOKIE = "wl_prize";
 /** A year: this is a one-time announcement, not a recurring banner. */
@@ -21,8 +22,10 @@ const MAX_AGE = 60 * 60 * 24 * 365;
  * Rendered on mount rather than during the server pass so it can read
  * the cookie: the gate is a static-ish page and the splash is personal.
  */
-export function PrizeSplash() {
+export function PrizeSplash({ signedIn }: { signedIn: boolean }) {
+  const router = useRouter();
   const [show, setShow] = useState(false);
+  const [going, setGoing] = useState(false);
 
   useEffect(() => {
     // Deferred so nothing updates state during the mount pass, and so
@@ -40,8 +43,29 @@ export function PrizeSplash() {
     return () => clearTimeout(timer);
   }, []);
 
-  function dismiss() {
+  function remember() {
     document.cookie = `${COOKIE}=1; path=/; max-age=${MAX_AGE}; SameSite=Lax`;
+  }
+
+  /**
+   * The button takes them to sign-up rather than just closing.
+   *
+   * The cookie is written before navigating, not after arriving: if the
+   * sign-up is abandoned halfway, this screen should still not be the
+   * thing that greets them next time.
+   *
+   * Somebody already signed in has nothing to sign up for, so they go
+   * to the picks instead.
+   */
+  function enter() {
+    if (going) return;
+    setGoing(true);
+    remember();
+    router.push(signedIn ? "/gate" : "/signup?next=%2Fgate");
+  }
+
+  function dismiss() {
+    remember();
     setShow(false);
   }
 
@@ -84,10 +108,19 @@ export function PrizeSplash() {
 
         <button
           type="button"
-          onClick={dismiss}
-          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 text-center text-base font-semibold text-stone-0"
+          onClick={enter}
+          disabled={going}
+          className="mt-6 w-full rounded-lg bg-emerald-800 px-4 py-3.5 text-center text-base font-semibold text-stone-0 disabled:opacity-60"
         >
-          Enter
+          {going ? "One moment…" : signedIn ? "Start picking" : "Sign up and play"}
+        </button>
+
+        <button
+          type="button"
+          onClick={dismiss}
+          className="mt-2.5 w-full py-1.5 text-center text-sm font-medium text-on-brand underline underline-offset-4 opacity-70"
+        >
+          Look around first
         </button>
 
         <p

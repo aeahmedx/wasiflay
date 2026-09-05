@@ -86,7 +86,7 @@ export default async function MainLayout({
           mid-session shouldn't blank out content that's still readable.
           The service worker covers the cold-start case, where there
           genuinely is nothing to show. */}
-      <PrizeSplash />
+      <PrizeSplash signedIn={profile !== null} />
 
       {needsTour && <OnboardingTour />}
 
