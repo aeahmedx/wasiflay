@@ -341,6 +341,29 @@ export default async function HubPage() {
           </section>
         )}
 
+        {/* --- next up ------------------------------------------------
+            Above the live matches, and shown whether or not anything is
+            playing. Once Saturday starts there is always something on,
+            and hiding the pickable fixtures behind it left people
+            opening the hub with nothing they could actually do. */}
+        {nextSlot.length > 0 && (
+          <section>
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-700">
+              Next up
+            </h2>
+            <p className="mb-2 text-sm text-stone-600">
+              <LocalTime iso={nextSlot[0].kicks_off_at} />
+            </p>
+            <ul className="space-y-2">
+              {nextSlot.map((match) => (
+                <li key={match.id}>
+                  <MatchRow match={match} userId={profile?.id ?? null} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* --- playing now -------------------------------------------- */}
         {live.length > 0 && (
           <section>
@@ -384,25 +407,6 @@ export default async function HubPage() {
                       )}
                     </p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* --- next up ------------------------------------------------ */}
-        {live.length === 0 && nextSlot.length > 0 && (
-          <section>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-700">
-              Next up
-            </h2>
-            <p className="mb-2 text-sm text-stone-600">
-              <LocalTime iso={nextSlot[0].kicks_off_at} />
-            </p>
-            <ul className="space-y-2">
-              {nextSlot.map((match) => (
-                <li key={match.id}>
-                  <MatchRow match={match} userId={profile?.id ?? null} />
                 </li>
               ))}
             </ul>
